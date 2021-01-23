@@ -63,9 +63,7 @@ namespace infinitas_statfetcher
                 }
             }
 
-            while (true)
-            {
-            }
+            while (!SongListAvailable(processHandle, offsets.songList)) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
             songDb = FetchSongDataBase(processHandle, offsets.songList);
 
             gameState state = gameState.finished;
@@ -118,6 +116,7 @@ namespace infinitas_statfetcher
             var form = new Dictionary<string, string>
             {
                 { "apikey", "apikey" },
+                { "date", latestData.timestamp.ToString("u") },
                 { "title", songDb[latestData.songID].title },
                 { "bpm", songDb[latestData.songID].bpm },
                 { "artist", songDb[latestData.songID].artist },
@@ -136,28 +135,6 @@ namespace infinitas_statfetcher
                 { "slow", latestData.judges.slow.ToString() },
                 { "combobreak", latestData.judges.combobreak.ToString() }
             }; 
-
-            /*
-            var form = new Dictionary<string, string>();
-            form.Add("apikey", "apikey");
-            form.Add( "title", songDb[latestData.songID].title);
-            form.Add( "bpm", songDb[latestData.songID].bpm);
-            form.Add( "artist", songDb[latestData.songID].artist);
-            form.Add( "notecount", songDb[latestData.songID].totalNotes[latestData.difficulty_index].ToString());
-            form.Add( "diff", latestData.difficulty);
-            form.Add( "level", songDb[latestData.songID].level[latestData.difficulty_index].ToString());
-            form.Add( "grade", latestData.grade);
-            form.Add( "lamp", latestData.clearLamp);
-            form.Add( "exscore", latestData.ex.ToString());
-            form.Add( "pgreat", latestData.judges.pgreat.ToString());
-            form.Add( "great", latestData.judges.great.ToString());
-            form.Add( "good", latestData.judges.good.ToString());
-            form.Add( "bad", latestData.judges.bad.ToString());
-            form.Add( "poor", latestData.judges.poor.ToString());
-            form.Add( "fast", latestData.judges.fast.ToString());
-            form.Add( "slow", latestData.judges.slow.ToString());
-            form.Add( "combobreak", latestData.judges.combobreak.ToString());
-            */
 
             var content = new FormUrlEncodedContent(form);
 
@@ -202,6 +179,7 @@ namespace infinitas_statfetcher
             PlayData data = new PlayData();
             data.judges = judges;
 
+            data.timestamp = DateTime.UtcNow;
             int bytesRead = 0;
             short word = 4;
             byte[] buffer = new byte[1008];
@@ -426,6 +404,15 @@ namespace infinitas_statfetcher
             /* Save files and whatever that should carry over sessions */
         }
 
+        static bool SongListAvailable(IntPtr handle, long offset)
+        {
+            byte[] buffer = new byte[8];
+            int nRead = 0;
+            ReadProcessMemory((int)handle, offset, buffer, buffer.Length, ref nRead);
+            var title = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Where(x => x != 0).ToArray());
+            Thread.Sleep(500); /* Safety in case we fetched stuff in the middle of copying over */
+            return title.Contains("5.1.1");
+        }
         static Int32 BytesToInt32(byte[] input, int skip, int take)
         {
             if(skip == 0)
@@ -461,6 +448,7 @@ namespace infinitas_statfetcher
     }
     public struct PlayData
     {
+        public DateTime timestamp;
         public string songID;
         public string grade;
         public JudgeStats judges;
