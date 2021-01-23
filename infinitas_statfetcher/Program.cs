@@ -50,8 +50,6 @@ namespace infinitas_statfetcher
             var songDb = new Dictionary<string, SongInfo>();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            var lastSongId = string.Empty;
-
             Offsets offsets = new Offsets();
             foreach(var line in File.ReadAllLines("offsets.txt"))
             {
@@ -65,18 +63,18 @@ namespace infinitas_statfetcher
                 }
             }
 
+            while (true)
+            {
+            }
             songDb = FetchSongDataBase(processHandle, offsets.songList);
 
             gameState state = gameState.finished;
 
-            int latestPlayTimer = 0;
-            SongInfo selectedSong = new SongInfo();
-            bool newclear = false;
             PlayData latestData = new PlayData();
 
             while (true)
             {
-                var newstate = FetchGameState(processHandle, state, offsets.judgeData, ref latestPlayTimer);
+                var newstate = FetchGameState(processHandle, state, offsets.judgeData);
                 if (newstate != state)
                 {
                     Console.Clear();
@@ -85,12 +83,10 @@ namespace infinitas_statfetcher
                     {
                         latestData = FetchPlayData(processHandle, songDb, offsets.playData, offsets.judgeData);
                         Send_PlayData(songDb, latestData, new Config());
-                        newclear = true;
                         Print_PlayData(songDb, latestData);
                     }
                 }
                 state = newstate;
-                var currentSongId = GetLastPreviewId(processHandle);
 
                 Thread.Sleep(2000);
             }
@@ -181,25 +177,14 @@ namespace infinitas_statfetcher
 
 
         //private static gameState FetchGameState(IntPtr handle, gameState current, long positionSettings, long positionPlayData, ref int prevTimer)
-        private static gameState FetchGameState(IntPtr handle, gameState current, long position, ref int prevTimer)
+        private static gameState FetchGameState(IntPtr handle, gameState current, long position)
         {
             byte[] buffer_playdata = new byte[1008];
-            byte[] buffer_settings = new byte[1008];
             int nRead = 0;
             short word = 4;
             ReadProcessMemory((int)handle, position, buffer_playdata, buffer_playdata.Length, ref nRead);
-            //ReadProcessMemory((int)handle, positionSettings, buffer_settings, buffer_settings.Length, ref nRead);
-
-            var playTimer = buffer_playdata.Skip(word * 30).Take(word).ToArray();
-            var timerValue = BytesToInt32(playTimer, 0, word);
 
             var marker = BytesToInt32(buffer_playdata.Skip(word * 24).Take(word).ToArray(), 0, word);
-
-
-            //var inMenu = BytesToInt(buffer_settings.Skip(word * 21).Take(word).ToArray(), 0, word);
-
-            bool songStarted = timerValue < prevTimer;
-            prevTimer = timerValue;
 
             if (current == gameState.started && marker == 0)
             {
@@ -346,19 +331,6 @@ namespace infinitas_statfetcher
             result.combobreak = p1cb + p2cb;
 
             return result;
-        }
-        private static string GetLastPreviewId(IntPtr processHandle)
-        {
-            int bytesRead = 0;
-
-            byte[] buffer = new byte[5];
-
-            // this is the address of the song playing preview file, for example 01006_pre.2dx
-            ReadProcessMemory((int)processHandle, 0x141D15008, buffer, buffer.Length, ref bytesRead);
-
-            var lastBgmSongId = Encoding.UTF8.GetString(buffer);
-
-            return lastBgmSongId;
         }
         private static Dictionary<string, SongInfo> FetchSongDataBase(IntPtr processHandle, long current_position)
         {
