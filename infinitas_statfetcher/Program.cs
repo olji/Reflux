@@ -451,8 +451,8 @@ namespace infinitas_statfetcher
     public struct SongInfo
     {
         public string ID;
-        public int[] totalNotes; /* SPN, SPH, SPA, DPN, DPH, DPA */
-        public int[] level; /* SPN, SPH, SPA, DPN, DPH, DPA */
+        public int[] totalNotes; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
+        public int[] level; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
         public string title;
         public string title_english;
         public string artist;
