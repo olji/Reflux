@@ -54,12 +54,15 @@ namespace infinitas_statfetcher
             foreach(var line in File.ReadAllLines("offsets.txt"))
             {
                 var sections = line.Split('=');
+                sections[0] = sections[0].Trim();
+                sections[1] = sections[1].Trim();
+                var offset = Convert.ToInt64(sections[1], 16);
                 switch (sections[0].ToLower())
                 {
-                    case "judgedata": offsets.judgeData = Convert.ToInt64(sections[1]); break;
-                    case "playdata": offsets.playData = Convert.ToInt64(sections[1]); break;
-                    case "songlist": offsets.songList = Convert.ToInt64(sections[1]); break;
-                    case "playsettings": offsets.playSettings = Convert.ToInt64(sections[1]); break;
+                    case "judgedata": offsets.judgeData = offset; break;
+                    case "playdata": offsets.playData =offset; break;
+                    case "songlist": offsets.songList =offset; break;
+                    case "playsettings": offsets.playSettings =offset; break;
                 }
             }
 
@@ -406,11 +409,13 @@ namespace infinitas_statfetcher
 
         static bool SongListAvailable(IntPtr handle, long offset)
         {
-            byte[] buffer = new byte[8];
+            byte[] buffer = new byte[64];
             int nRead = 0;
             ReadProcessMemory((int)handle, offset, buffer, buffer.Length, ref nRead);
             var title = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Where(x => x != 0).ToArray());
-            Thread.Sleep(500); /* Safety in case we fetched stuff in the middle of copying over */
+            var titleNoFilter = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
+            Thread.Sleep(5000); /* Safety in case we fetched stuff in the middle of copying over */
+            Console.WriteLine($"Read string: \"{title}\", unfiltered: \"{titleNoFilter}\"");
             return title.Contains("5.1.1");
         }
         static Int32 BytesToInt32(byte[] input, int skip, int take)
