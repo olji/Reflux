@@ -53,7 +53,6 @@ namespace infinitas_statfetcher
             var lastSongId = string.Empty;
 
             Offsets offsets = new Offsets();
-            File.ReadAllLines("offsets.txt");
             foreach(var line in File.ReadAllLines("offsets.txt"))
             {
                 var sections = line.Split('=');
@@ -65,11 +64,6 @@ namespace infinitas_statfetcher
                     case "playsettings": offsets.playSettings = Convert.ToInt64(sections[1]); break;
                 }
             }
-            offsets.songList = 0x141D4A160;
-            offsets.playData = 0x1414373D4;
-            offsets.judgeData = 0x1415E6378;
-            offsets.playSettings = 0x141437160;
-
 
             songDb = FetchSongDataBase(processHandle, offsets.songList);
 
