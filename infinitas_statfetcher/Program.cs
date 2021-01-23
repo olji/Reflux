@@ -69,29 +69,9 @@ namespace infinitas_statfetcher
             offsets.playData = 0x1414373D4;
             offsets.judgeData = 0x1415E6378;
             offsets.playSettings = 0x141437160;
-            var current_position = offsets.songList;
 
-            Console.WriteLine("Fetching available songs");
-            while (true)
-            {
 
-                var songInfo = FetchSongInfo(processHandle, current_position);
-
-                if (songInfo.title == null)
-                {
-                    Console.WriteLine("Songs fetched.");
-                    break;
-                }
-
-                if (!songDb.ContainsKey(songInfo.ID))
-                {
-                    songDb.Add(songInfo.ID, songInfo);
-                }
-
-                current_position += 0x3F0;
-
-                Console.WriteLine(songInfo.title);
-            }
+            songDb = FetchSongDataBase(processHandle, offsets.songList);
 
             gameState state = gameState.finished;
 
@@ -385,6 +365,32 @@ namespace infinitas_statfetcher
             var lastBgmSongId = Encoding.UTF8.GetString(buffer);
 
             return lastBgmSongId;
+        }
+        private static Dictionary<string, SongInfo> FetchSongDataBase(IntPtr processHandle, long current_position)
+        {
+            Dictionary<string, SongInfo> result = new Dictionary<string, SongInfo>();
+            Console.WriteLine("Fetching available songs");
+            while (true)
+            {
+
+                var songInfo = FetchSongInfo(processHandle, current_position);
+
+                if (songInfo.title == null)
+                {
+                    Console.WriteLine("Songs fetched.");
+                    break;
+                }
+
+                if (!result.ContainsKey(songInfo.ID))
+                {
+                    result.Add(songInfo.ID, songInfo);
+                }
+
+                current_position += 0x3F0;
+
+                Console.WriteLine(songInfo.title);
+            }
+            return result;
         }
         private static SongInfo FetchSongInfo(IntPtr handle, long position)
         {
