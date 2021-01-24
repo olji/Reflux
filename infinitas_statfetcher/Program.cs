@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Ini;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -25,10 +27,13 @@ namespace infinitas_statfetcher
 
         enum offsetCategories { judgeInfo = 0, noteInfo, songInfo }
         static HttpClient client = new HttpClient();
+        static Config config = new Config();
+        static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
         static void Main(string[] args)
         {
             Process process = null;
 
+            ParseConfig();
             Console.WriteLine("Trying to hook to INFINITAS...");
             do
             {
@@ -43,7 +48,10 @@ namespace infinitas_statfetcher
             } while (process == null);
 
             Console.Clear();
-            Console.WriteLine("Infinitas launched, waiting for song selection screen...");
+            Console.WriteLine("Hooked to process, waiting until song list is loaded...");
+
+
+            LoadEncodingFixes();
 
             IntPtr processHandle = OpenProcess(0x0410, false, process.Id); /* Open process for memory read */
 
@@ -83,7 +91,7 @@ namespace infinitas_statfetcher
                     if (newstate == gameState.finished)
                     {
                         latestData = FetchPlayData(processHandle, songDb, offsets.playData, offsets.judgeData);
-                        Send_PlayData(songDb, latestData, new Config());
+                        Send_PlayData(songDb, latestData);
                         Print_PlayData(songDb, latestData);
                     }
                 }
@@ -114,19 +122,21 @@ namespace infinitas_statfetcher
 
         }
 
-        static async void Send_PlayData(Dictionary<string, SongInfo> songDb, PlayData latestData, Config config )
+        static async void Send_PlayData(Dictionary<string, SongInfo> songDb, PlayData latestData )
         {
             var form = new Dictionary<string, string>
             {
                 { "apikey", "apikey" },
-                { "date", latestData.timestamp.ToString("u") },
+                { "date", latestData.timestamp.ToString("s") },
                 { "title", songDb[latestData.songID].title },
                 { "bpm", songDb[latestData.songID].bpm },
                 { "artist", songDb[latestData.songID].artist },
+                { "genre", songDb[latestData.songID].genre },
                 { "notecount", songDb[latestData.songID].totalNotes[latestData.difficulty_index].ToString() },
                 { "diff", latestData.difficulty },
                 { "level", songDb[latestData.songID].level[latestData.difficulty_index].ToString() },
                 { "grade", latestData.grade },
+                { "gaugepercent", latestData.gauge.ToString() },
                 { "lamp", latestData.clearLamp },
                 { "exscore", latestData.ex.ToString() },
                 { "pgreat", latestData.judges.pgreat.ToString() },
@@ -141,8 +151,8 @@ namespace infinitas_statfetcher
 
             var content = new FormUrlEncodedContent(form);
 
-            //var response = await client.PostAsync(config.server, content);
-            var response = await client.PostAsync("http://127.0.0.1:5000/api/songplayed", content);
+            var response = await client.PostAsync(config.server + "/api/songplayed", content);
+            //var response = await client.PostAsync("http://127.0.0.1:5000/api/songplayed", content);
 
             var responseString = await response.Content.ReadAsStringAsync();
 
@@ -328,6 +338,12 @@ namespace infinitas_statfetcher
                     break;
                 }
 
+                if (knownEncodingIssues.ContainsKey(songInfo.title))
+                {
+                    var old = songInfo.title;
+                    songInfo.title = knownEncodingIssues[songInfo.title];
+                    Console.WriteLine($"Fixed encoding issue \"{old}\" with \"{songInfo.title}\"");
+                }
                 if (!result.ContainsKey(songInfo.ID))
                 {
                     result.Add(songInfo.ID, songInfo);
@@ -335,7 +351,6 @@ namespace infinitas_statfetcher
 
                 current_position += 0x3F0;
 
-                Console.WriteLine(songInfo.title);
             }
             return result;
         }
@@ -407,6 +422,12 @@ namespace infinitas_statfetcher
             /* Save files and whatever that should carry over sessions */
         }
 
+        static void ParseConfig()
+        {
+            var root = new ConfigurationBuilder().AddIniFile("config.ini").Build();
+            config.server = root["connection:serveraddress"];
+            config.api_key = root["connection:apikey"];
+        }
         static bool SongListAvailable(IntPtr handle, long offset)
         {
             byte[] buffer = new byte[64];
@@ -414,9 +435,18 @@ namespace infinitas_statfetcher
             ReadProcessMemory((int)handle, offset, buffer, buffer.Length, ref nRead);
             var title = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Where(x => x != 0).ToArray());
             var titleNoFilter = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
-            Thread.Sleep(5000); /* Safety in case we fetched stuff in the middle of copying over */
-            Console.WriteLine($"Read string: \"{title}\", unfiltered: \"{titleNoFilter}\"");
-            return title.Contains("5.1.1");
+            Thread.Sleep(5000); /* Safety in case we fetched correct string in the middle of songlist being constructed */
+            Console.WriteLine($"Read string: \"{title}\", expecting \"5.1.1.\"");
+            return title.Contains("5.1.1.");
+        }
+        static void LoadEncodingFixes()
+        {
+            /* This shouldn't be necessary, Viva!, fffff, AETHER and Sweet Sweet Magic encoded fine during early development */
+            foreach (var line in File.ReadAllLines("encodingfixes.txt"))
+            {
+                var pair = line.Split('=');
+                knownEncodingIssues.Add(pair[0], pair[1]);
+            }
         }
         static Int32 BytesToInt32(byte[] input, int skip, int take)
         {
