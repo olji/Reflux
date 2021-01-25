@@ -23,9 +23,6 @@ namespace infinitas_statfetcher
             Int64 lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
 
-        enum gameState { started = 0, finished };
-
-        enum offsetCategories { judgeInfo = 0, noteInfo, songInfo }
         static HttpClient client = new HttpClient();
         static Config config = new Config();
         static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
@@ -81,7 +78,7 @@ namespace infinitas_statfetcher
 
             PlayData latestData = new PlayData();
 
-            while (true)
+            while (!process.HasExited)
             {
                 var newstate = FetchGameState(processHandle, state, offsets.judgeData);
                 if (newstate != state)
@@ -90,7 +87,7 @@ namespace infinitas_statfetcher
                     Console.WriteLine($"STATUS:{(newstate == gameState.finished ? " NOT" : "")} PLAYING");
                     if (newstate == gameState.finished)
                     {
-                        latestData = FetchPlayData(processHandle, songDb, offsets.playData, offsets.judgeData);
+                        latestData = FetchPlayData(processHandle, songDb, offsets.playData, offsets.judgeData, offsets.playSettings);
                         Send_PlayData(songDb, latestData);
                         Print_PlayData(songDb, latestData);
                     }
@@ -108,6 +105,16 @@ namespace infinitas_statfetcher
             Console.WriteLine("\nLATEST CLEAR:");
 
             Console.WriteLine($"{songDb[latestData.songID].title} {latestData.difficulty} [{songDb[latestData.songID].level[latestData.difficulty_index]}]");
+            Console.WriteLine($"" +
+                $"{latestData.judges.playtype.ToString()} " +
+                $"{latestData.settings.style} " +
+                $"{(latestData.judges.playtype == playType.DP ? latestData.settings.style2 : " ")}" +
+                $"{latestData.settings.gauge} " +
+                $"{latestData.settings.assist} " +
+                $"{latestData.settings.range} " +
+                $"{(latestData.judges.playtype == playType.DP && latestData.settings.flip ? "FLIP " : "")}" + 
+                $"{(latestData.settings.Hran ? "H-RAN " : "")}" + 
+                $"{(latestData.settings.battle ? "BATTLE " : "")}");
             Console.WriteLine("Clear:\t\t" + latestData.clearLamp);
             Console.WriteLine("DJ Level:\t" + latestData.grade);
             Console.WriteLine("EX score:\t" + latestData.ex);
@@ -129,6 +136,7 @@ namespace infinitas_statfetcher
                 { "apikey", "apikey" },
                 { "date", latestData.timestamp.ToString("s") },
                 { "title", songDb[latestData.songID].title },
+                { "title2", songDb[latestData.songID].title_english },
                 { "bpm", songDb[latestData.songID].bpm },
                 { "artist", songDb[latestData.songID].artist },
                 { "genre", songDb[latestData.songID].genre },
@@ -146,17 +154,30 @@ namespace infinitas_statfetcher
                 { "poor", latestData.judges.poor.ToString() },
                 { "fast", latestData.judges.fast.ToString() },
                 { "slow", latestData.judges.slow.ToString() },
-                { "combobreak", latestData.judges.combobreak.ToString() }
+                { "combobreak", latestData.judges.combobreak.ToString() },
+                { "playtype", latestData.judges.playtype.ToString() },
+                { "style", latestData.settings.style.ToString() },
+                { "style2", latestData.settings.style2.ToString() },
+                { "gauge", latestData.settings.gauge.ToString() },
+                { "assist", latestData.settings.assist.ToString() },
+                { "range", latestData.settings.range.ToString() },
             }; 
 
             var content = new FormUrlEncodedContent(form);
 
-            var response = await client.PostAsync(config.server + "/api/songplayed", content);
-            //var response = await client.PostAsync("http://127.0.0.1:5000/api/songplayed", content);
+            try
+            {
+                var response = await client.PostAsync(config.server + "/api/songplayed", content);
+                //var response = await client.PostAsync("http://127.0.0.1:5000/api/songplayed", content);
 
-            var responseString = await response.Content.ReadAsStringAsync();
+                var responseString = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(responseString);
+            }
+            catch
+            {
+                Console.WriteLine("Uploading failed");
+            }
 
-            Console.WriteLine(responseString);
 
         }
         private static void Process_Exited(object sender, EventArgs e)
@@ -186,11 +207,22 @@ namespace infinitas_statfetcher
             }
             return current;
         }
-        private static PlayData FetchPlayData(IntPtr handle, Dictionary<string, SongInfo> songDb, long position_playdata, long position_judgedata)
+        private static PlayData FetchPlayData(IntPtr handle, Dictionary<string, SongInfo> songDb, long position_playdata, long position_judgedata, long position_playsettings)
         {
             JudgeStats judges = FetchJudgeStats(handle, position_judgedata);
+            PlaySettings settings = FetchPlaySettings(handle, position_playsettings, judges.playtype);
+
             PlayData data = new PlayData();
             data.judges = judges;
+            data.settings = settings;
+
+            if(settings.Hran || settings.battle)
+            {
+                data.report = false;
+                Console.WriteLine($"Eww, {(settings.Hran ? "H-RAN" : "Battle")}");
+                return data;
+            }
+            data.report = true;
 
             data.timestamp = DateTime.UtcNow;
             int bytesRead = 0;
@@ -295,6 +327,7 @@ namespace infinitas_statfetcher
 
             ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
 
+            var style = playType.P1;
             var p1pgreat = BytesToInt32(buffer.Skip(word).Take(word).ToArray(), 0, word);
             var p1great = BytesToInt32(buffer.Skip(word * 2).Take(word).ToArray(), 0, word);
             var p1good = BytesToInt32(buffer.Skip(word * 3).Take(word).ToArray(), 0, word);
@@ -312,6 +345,16 @@ namespace infinitas_statfetcher
             var p1slow = BytesToInt32(buffer.Skip(word * 15).Take(word).ToArray(), 0, word);
             var p2slow = BytesToInt32(buffer.Skip(word * 16).Take(word).ToArray(), 0, word);
 
+            if (p1pgreat + p1great + p1good + p1bad + p1poor == 0)
+            {
+                style = playType.P2;
+            } 
+            else if (p2pgreat + p2great + p2good + p2bad + p2poor > 0)
+            {
+                style = playType.DP;
+            }
+
+            result.playtype = style;
             result.pgreat = p1pgreat + p2pgreat;
             result.great = p1great + p2great;
             result.good = p1good + p2good;
@@ -320,6 +363,97 @@ namespace infinitas_statfetcher
             result.fast = p1fast + p2fast;
             result.slow = p1slow + p2slow;
             result.combobreak = p1cb + p2cb;
+
+            return result;
+        }
+        private static PlaySettings FetchPlaySettings(IntPtr handle, long position, playType playstyle)
+        {
+            int bytesRead = 0;
+            short word = 4;
+
+            byte[] buffer = new byte[128];
+
+            ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
+            PlaySettings result = new PlaySettings();
+            int style = 0;
+            int gauge = 0;
+            int assist = 0;
+            int range = 0;
+            int style2 = 0;
+            if(playstyle == playType.P1)
+            {
+                style = BytesToInt32(buffer.Take(word).ToArray(), 0, word);
+                gauge = BytesToInt32(buffer.Skip(word).Take(word).ToArray(), 0, word);
+                assist = BytesToInt32(buffer.Skip(word * 2).Take(word).ToArray(), 0, word);
+                range = BytesToInt32(buffer.Skip(word * 4).Take(word).ToArray(), 0, word);
+            }
+            else if (playstyle == playType.P2)
+            {
+                style = BytesToInt32(buffer.Skip(word * 12).Take(word).ToArray(), 0, word);
+                gauge = BytesToInt32(buffer.Skip(word * 13).Take(word).ToArray(), 0, word);
+                assist = BytesToInt32(buffer.Skip(word * 14).Take(word).ToArray(), 0, word);
+                range = BytesToInt32(buffer.Skip(word * 16).Take(word).ToArray(), 0, word);
+            }
+            else /* DP */
+            {
+                style = BytesToInt32(buffer.Take(word).ToArray(), 0, word);
+                gauge = BytesToInt32(buffer.Skip(word).Take(word).ToArray(), 0, word);
+                assist = BytesToInt32(buffer.Skip(word * 2).Take(word).ToArray(), 0, word);
+                range = BytesToInt32(buffer.Skip(word * 4).Take(word).ToArray(), 0, word);
+                style2 = BytesToInt32(buffer.Skip(word * 5).Take(word).ToArray(), 0, word);
+            }
+            int flip = BytesToInt32(buffer.Skip(word * 3).Take(word).ToArray(), 0, word);
+            int battle = BytesToInt32(buffer.Skip(word*6).Take(word).ToArray(), 0, word);
+            int Hran = BytesToInt32(buffer.Skip(word*7).Take(word).ToArray(), 0, word);
+
+            switch (style)
+            {
+                case 0: result.style = "OFF"; break;
+                case 1: result.style = "RANDOM"; break;
+                case 2: result.style = "R-RANDOM"; break;
+                case 3: result.style = "S-RANDOM"; break;
+                case 4: result.style = "MIRROR"; break;
+            }
+            switch (style2)
+            {
+                case 0: result.style2 = "OFF"; break;
+                case 1: result.style2 = "RANDOM"; break;
+                case 2: result.style2 = "R-RANDOM"; break;
+                case 3: result.style2 = "S-RANDOM"; break;
+                case 4: result.style2 = "MIRROR"; break;
+            }
+
+            switch (gauge)
+            {
+                case 0: result.gauge = "OFF"; break;
+                case 1: result.gauge = "ASSISTED EASY"; break;
+                case 2: result.gauge = "EASY"; break;
+                case 3: result.gauge = "HARD"; break;
+                case 4: result.gauge = "EX HARD"; break;
+            }
+
+            switch (assist)
+            {
+                case 0: result.assist = "OFF"; break;
+                case 1: result.assist = "AUTO SCRATCH"; break;
+                case 2: result.assist = "5KEYS"; break;
+                case 3: result.assist = "LEGACY NOTE"; break;
+                case 4: result.assist = "KEY ASSIST"; break;
+                case 5: result.assist = "ANY KEY"; break;
+            }
+
+            switch (range)
+            {
+                case 0: result.range = "OFF"; break;
+                case 1: result.range = "SUDDEN+"; break;
+                case 2: result.range = "HIDDEN+"; break;
+                case 3: result.range = "SUD+ & HID+"; break;
+                case 4: result.range = "LIFT"; break;
+                case 5: result.range = "LIFT & SUD+"; break;
+            }
+            result.flip = flip == 0 ? false : true;
+            result.battle = battle == 0 ? false : true;
+            result.Hran = Hran == 0 ? false : true;
 
             return result;
         }
@@ -458,6 +592,10 @@ namespace infinitas_statfetcher
         }
     }
 
+    #region Custom objects
+    enum gameState { started = 0, finished };
+    enum offsetCategories { judgeInfo = 0, noteInfo, songInfo }
+    public enum playType { P1 = 0, P2, DP }
     public struct Offsets
     {
         public long songList;
@@ -484,17 +622,31 @@ namespace infinitas_statfetcher
     public struct PlayData
     {
         public DateTime timestamp;
+        public bool report;
         public string songID;
         public string grade;
         public JudgeStats judges;
+        public PlaySettings settings;
         public int gauge;
         public int ex;
         public string difficulty; 
         public int difficulty_index; 
         public string clearLamp;
     }
+    public struct PlaySettings
+    {
+        public string style;
+        public string style2; /* Style for 2p side in DP */
+        public string gauge;
+        public string assist;
+        public string range;
+        public bool flip;
+        public bool battle;
+        public bool Hran;
+    }
     public struct JudgeStats
     {
+        public playType playtype;
         public int pgreat;
         public int great;
         public int good;
@@ -504,4 +656,5 @@ namespace infinitas_statfetcher
         public int slow;
         public int combobreak;
     }
+    #endregion
 }
