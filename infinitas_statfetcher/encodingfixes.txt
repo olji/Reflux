@@ -1,15 +1,18 @@
-﻿?Viva!=¡Viva!
-fffff=ƒƒƒƒƒ
-?THER=ÆTHER
-?bertreffen=Übertreffen
-?影=焱影
-Sweet Sweet?Magic=Sweet Sweet ♥ Magic
-Raspberry?Heart(English version)=Raspberry♡Heart (English version)
-Double??Loving Heart=Double♡♡Loving Heart
-Raison d'?tre～交差する宿命～=Raison d'être～交差する宿命～
-Love?km=Love♥km
-キャトられ?恋はモ～モク=キャトられ♥恋はモ～モク
-Pr?ludium=Präludium
-旋律のドグマ～Mis?rables～=旋律のドグマ～Misérables～
-超!!遠距離らぶ?メ～ル=超!!遠距離らぶ♡メ～ル
-表裏一体！？怪盗いいんちょの悩み?=表裏一体！？怪盗いいんちょの悩み♥
+﻿?Viva!	¡Viva!
+fffff	ƒƒƒƒƒ
+?THER	ÆTHER
+?bertreffen	Übertreffen
+?影	焱影
+Sweet Sweet?Magic	Sweet Sweet ♥ Magic
+Raspberry?Heart(English version)	Raspberry♡Heart (English version)
+Double??Loving Heart	Double♡♡Loving Heart
+Raison d'?tre～交差する宿命～	Raison d'être～交差する宿命～
+Love?km	Love♥km
+キャトられ?恋はモ～モク	キャトられ♥恋はモ～モク
+Pr?ludium	Präludium
+旋律のドグマ～Mis?rables～	旋律のドグマ～Misérables～
+超!!遠距離らぶ?メ～ル	超!!遠距離らぶ♡メ～ル
+表裏一体！？怪盗いいんちょの悩み?	表裏一体！？怪盗いいんちょの悩み♥
+D? D? MOUSE	DÉ DÉ MOUSE
+Marguerite du Pr?	Marguerite du Pré
+ギュ～っとしたい?Prim	ギュ～っとしたい♥Prim

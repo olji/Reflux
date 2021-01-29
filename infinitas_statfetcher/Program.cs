@@ -56,7 +56,7 @@ namespace infinitas_statfetcher
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             Offsets offsets = new Offsets();
-            foreach(var line in File.ReadAllLines("offsets.txt"))
+            foreach (var line in File.ReadAllLines("offsets.txt"))
             {
                 var sections = line.Split('=');
                 sections[0] = sections[0].Trim();
@@ -65,15 +65,39 @@ namespace infinitas_statfetcher
                 switch (sections[0].ToLower())
                 {
                     case "judgedata": offsets.judgeData = offset; break;
-                    case "playdata": offsets.playData =offset; break;
-                    case "songlist": offsets.songList =offset; break;
-                    case "playsettings": offsets.playSettings =offset; break;
+                    case "playdata": offsets.playData = offset; break;
+                    case "songlist": offsets.songList = offset; break;
+                    case "playsettings": offsets.playSettings = offset; break;
                 }
             }
 
-            while (!SongListAvailable(processHandle, offsets.songList)) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
-            songDb = FetchSongDataBase(processHandle, offsets.songList);
+            bool songlistFetched = false;
+            while (!songlistFetched)
+            {
+                while (!SongListAvailable(processHandle, offsets.songList)) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
+                songDb = FetchSongDataBase(processHandle, offsets.songList);
+                if (songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
+                {
+                    Console.WriteLine("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
+                    Thread.Sleep(5000);
+                }
+                else
+                {
+                    songlistFetched = true;
+                }
+            }
 
+            //upload_songlist(songDb);
+            /* Primarily for debugging and checking for encoding issues */
+            if (config.output_db)
+            {
+                List<string> p = new List<string>() { "id,title,title2,artist,genre" };
+                foreach (var v in songDb)
+                {
+                    p.Add($"{v.Key},{v.Value.title},{v.Value.title_english},{v.Value.artist},{v.Value.genre}");
+                }
+                File.WriteAllLines("songs.csv", p.ToArray());
+            }
             gameState state = gameState.finished;
 
             PlayData latestData = new PlayData();
@@ -112,8 +136,8 @@ namespace infinitas_statfetcher
                 $"{latestData.settings.gauge} " +
                 $"{latestData.settings.assist} " +
                 $"{latestData.settings.range} " +
-                $"{(latestData.judges.playtype == playType.DP && latestData.settings.flip ? "FLIP " : "")}" + 
-                $"{(latestData.settings.Hran ? "H-RAN " : "")}" + 
+                $"{(latestData.judges.playtype == playType.DP && latestData.settings.flip ? "FLIP " : "")}" +
+                $"{(latestData.settings.Hran ? "H-RAN " : "")}" +
                 $"{(latestData.settings.battle ? "BATTLE " : "")}");
             Console.WriteLine("Clear:\t\t" + latestData.clearLamp);
             Console.WriteLine("DJ Level:\t" + latestData.grade);
@@ -129,7 +153,7 @@ namespace infinitas_statfetcher
 
         }
 
-        static async void Send_PlayData(Dictionary<string, SongInfo> songDb, PlayData latestData )
+        static async void Send_PlayData(Dictionary<string, SongInfo> songDb, PlayData latestData)
         {
             var form = new Dictionary<string, string>
             {
@@ -161,7 +185,7 @@ namespace infinitas_statfetcher
                 { "gauge", latestData.settings.gauge.ToString() },
                 { "assist", latestData.settings.assist.ToString() },
                 { "range", latestData.settings.range.ToString() },
-            }; 
+            };
 
             var content = new FormUrlEncodedContent(form);
 
@@ -187,7 +211,6 @@ namespace infinitas_statfetcher
         }
 
 
-        //private static gameState FetchGameState(IntPtr handle, gameState current, long positionSettings, long positionPlayData, ref int prevTimer)
         private static gameState FetchGameState(IntPtr handle, gameState current, long position)
         {
             byte[] buffer_playdata = new byte[1008];
@@ -216,7 +239,7 @@ namespace infinitas_statfetcher
             data.judges = judges;
             data.settings = settings;
 
-            if(settings.Hran || settings.battle)
+            if (settings.Hran || settings.battle)
             {
                 data.report = false;
                 Console.WriteLine($"Eww, {(settings.Hran ? "H-RAN" : "Battle")}");
@@ -348,7 +371,7 @@ namespace infinitas_statfetcher
             if (p1pgreat + p1great + p1good + p1bad + p1poor == 0)
             {
                 style = playType.P2;
-            } 
+            }
             else if (p2pgreat + p2great + p2good + p2bad + p2poor > 0)
             {
                 style = playType.DP;
@@ -380,7 +403,7 @@ namespace infinitas_statfetcher
             int assist = 0;
             int range = 0;
             int style2 = 0;
-            if(playstyle == playType.P1)
+            if (playstyle == playType.P1)
             {
                 style = BytesToInt32(buffer.Take(word).ToArray(), 0, word);
                 gauge = BytesToInt32(buffer.Skip(word).Take(word).ToArray(), 0, word);
@@ -403,8 +426,8 @@ namespace infinitas_statfetcher
                 style2 = BytesToInt32(buffer.Skip(word * 5).Take(word).ToArray(), 0, word);
             }
             int flip = BytesToInt32(buffer.Skip(word * 3).Take(word).ToArray(), 0, word);
-            int battle = BytesToInt32(buffer.Skip(word*6).Take(word).ToArray(), 0, word);
-            int Hran = BytesToInt32(buffer.Skip(word*7).Take(word).ToArray(), 0, word);
+            int battle = BytesToInt32(buffer.Skip(word * 6).Take(word).ToArray(), 0, word);
+            int Hran = BytesToInt32(buffer.Skip(word * 7).Take(word).ToArray(), 0, word);
 
             switch (style)
             {
@@ -478,6 +501,12 @@ namespace infinitas_statfetcher
                     songInfo.title = knownEncodingIssues[songInfo.title];
                     Console.WriteLine($"Fixed encoding issue \"{old}\" with \"{songInfo.title}\"");
                 }
+                if (knownEncodingIssues.ContainsKey(songInfo.artist))
+                {
+                    var old = songInfo.artist;
+                    songInfo.artist = knownEncodingIssues[songInfo.artist];
+                    Console.WriteLine($"Fixed encoding issue \"{old}\" with \"{songInfo.artist}\"");
+                }
                 if (!result.ContainsKey(songInfo.ID))
                 {
                     result.Add(songInfo.ID, songInfo);
@@ -528,7 +557,7 @@ namespace infinitas_statfetcher
                 bpm = bpmMax.ToString("000");
             }
 
-            var noteCounts = new int[] { BytesToInt32(noteCounts_bytes, 0, word), BytesToInt32(noteCounts_bytes, word, word), BytesToInt32(noteCounts_bytes, word*2, word), BytesToInt32(noteCounts_bytes, word*3, word), BytesToInt32(noteCounts_bytes, word*4, word), BytesToInt32(noteCounts_bytes, word*5, word), BytesToInt32(noteCounts_bytes, word*6, word), BytesToInt32(noteCounts_bytes, word*7, word), BytesToInt32(noteCounts_bytes, word*8, word), BytesToInt32(noteCounts_bytes, word*9, word)};
+            var noteCounts = new int[] { BytesToInt32(noteCounts_bytes, 0, word), BytesToInt32(noteCounts_bytes, word, word), BytesToInt32(noteCounts_bytes, word * 2, word), BytesToInt32(noteCounts_bytes, word * 3, word), BytesToInt32(noteCounts_bytes, word * 4, word), BytesToInt32(noteCounts_bytes, word * 5, word), BytesToInt32(noteCounts_bytes, word * 6, word), BytesToInt32(noteCounts_bytes, word * 7, word), BytesToInt32(noteCounts_bytes, word * 8, word), BytesToInt32(noteCounts_bytes, word * 9, word) };
 
 
             var idarray = buffer.Skip(256 + 368).Take(4).ToArray();
@@ -545,7 +574,7 @@ namespace infinitas_statfetcher
                 bpm = bpm,
                 totalNotes = noteCounts,
                 level = diff_levels
-                
+
             };
 
             return song;
@@ -561,6 +590,8 @@ namespace infinitas_statfetcher
             var root = new ConfigurationBuilder().AddIniFile("config.ini").Build();
             config.server = root["connection:serveraddress"];
             config.api_key = root["connection:apikey"];
+
+            config.output_db = bool.Parse(root["debug:outputdb"]);
         }
         static bool SongListAvailable(IntPtr handle, long offset)
         {
@@ -569,7 +600,6 @@ namespace infinitas_statfetcher
             ReadProcessMemory((int)handle, offset, buffer, buffer.Length, ref nRead);
             var title = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Where(x => x != 0).ToArray());
             var titleNoFilter = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
-            Thread.Sleep(5000); /* Safety in case we fetched correct string in the middle of songlist being constructed */
             Console.WriteLine($"Read string: \"{title}\", expecting \"5.1.1.\"");
             return title.Contains("5.1.1.");
         }
@@ -578,13 +608,13 @@ namespace infinitas_statfetcher
             /* This shouldn't be necessary, Viva!, fffff, AETHER and Sweet Sweet Magic encoded fine during early development */
             foreach (var line in File.ReadAllLines("encodingfixes.txt"))
             {
-                var pair = line.Split('=');
+                var pair = line.Split('\t');
                 knownEncodingIssues.Add(pair[0], pair[1]);
             }
         }
         static Int32 BytesToInt32(byte[] input, int skip, int take)
         {
-            if(skip == 0)
+            if (skip == 0)
             {
                 return BitConverter.ToInt32(input.Take(take).ToArray());
             }
@@ -607,6 +637,7 @@ namespace infinitas_statfetcher
     {
         public string server;
         public string api_key;
+        public bool output_db;
     }
     public struct SongInfo
     {
