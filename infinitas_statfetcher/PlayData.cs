@@ -4,6 +4,17 @@ using System.Text;
 
 namespace infinitas_statfetcher
 {
+    struct ChartInfo
+    {
+        public int totalNotes;
+        public int level;
+        public string title;
+        public string title_english;
+        public string difficulty;
+        public string artist;
+        public string genre;
+        public string bpm;
+    }
     class PlayData
     {
         DateTime timestamp;
@@ -83,38 +94,13 @@ namespace infinitas_statfetcher
                 grade = "F";
             }
 
-            /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
-            switch (lamp)
-            {
-                case 0: clearLamp = "NP"; break;
-                case 1: clearLamp = "F"; break;
-                case 2: clearLamp = "AC"; break;
-                case 3: clearLamp = "EC"; break;
-                case 4: clearLamp = "NC"; break;
-                case 5: clearLamp = "HC"; break;
-                case 6: clearLamp = "EX"; break;
-                case 7: clearLamp = "FC"; break;
-            }
+            clearLamp = Utils.IntToLamp(lamp);
         }
         ChartInfo FetchChartInfo(SongInfo song, int diffVal)
         {
             ChartInfo result = new ChartInfo();
             /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
-            string diff = "";
-            switch (diffVal)
-            {
-                case 0: diff = "SPB"; break;
-                case 1: diff = "SPN"; break;
-                case 2: diff = "SPH"; break;
-                case 3: diff = "SPA"; break;
-                case 4: diff = "SPL"; break;
-                case 5: diff = "DPB"; break;
-                case 6: diff = "DPN"; break;
-                case 7: diff = "DPH"; break;
-                case 8: diff = "DPA"; break;
-                case 9: diff = "DPL"; break;
-            }
-            result.difficulty = diff;
+            result.difficulty = Utils.IntToDiff(diffVal);
             result.level = song.level[diffVal];
             result.title = song.title;
             result.title_english = song.title_english;
@@ -186,17 +172,6 @@ namespace infinitas_statfetcher
             }
             sb.Append($"\t{timestamp}");
             return sb.ToString();
-        }
-        struct ChartInfo
-        {
-            public int totalNotes;
-            public int level;
-            public string title;
-            public string title_english;
-            public string difficulty;
-            public string artist;
-            public string genre;
-            public string bpm;
         }
     }
 }

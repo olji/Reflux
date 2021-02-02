@@ -80,14 +80,13 @@ namespace infinitas_statfetcher
             File.Create(sessionFile.FullName).Close();
             WriteLine(sessionFile, Config.GetTsvHeader());
 
-            //upload_songlist(songDb);
             /* Primarily for debugging and checking for encoding issues */
             if (Config.Output_songlist)
             {
-                List<string> p = new List<string>() { "id,title,title2,artist,genre" };
+                List<string> p = new List<string>() { "id\ttitle\ttitle2\tartist\tgenre" };
                 foreach (var v in songDb)
                 {
-                    p.Add($"{v.Key},{v.Value.title},{v.Value.title_english},{v.Value.artist},{v.Value.genre}");
+                    p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
                 }
                 File.WriteAllLines("songs.csv", p.ToArray());
             }
@@ -132,9 +131,9 @@ namespace infinitas_statfetcher
 
             var h = header.Split('\t');
             var e = entry.Split('\t');
-            for(int i = 0; i < h.Length; i++)
+            for (int i = 0; i < h.Length; i++)
             {
-                Console.WriteLine("{0,10}: {1,15}", h[i], e[i]);
+                Console.WriteLine("{0,15}: {1,-50}", h[i], e[i]);
             }
         }
         static void WriteLine(FileInfo file, string str)

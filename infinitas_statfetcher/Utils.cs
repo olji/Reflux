@@ -164,5 +164,68 @@ namespace infinitas_statfetcher
             }
             return BitConverter.ToInt32(input.Skip(skip).Take(take).ToArray());
         }
+        public static string IntToDiff(int diff) {
+            switch (diff)
+            {
+                case 0: return "SPB";
+                case 1: return "SPN";
+                case 2: return "SPH";
+                case 3: return "SPA";
+                case 4: return "SPL";
+                case 5: return "DPB";
+                case 6: return "DPN";
+                case 7: return "DPH";
+                case 8: return "DPA";
+                case 9: return "DPL";
+                default: return "Unknown";
+            }
+        }
+        public static int DiffToInt(string diff) { 
+            switch (diff)
+            {
+                case "SPB": return 0;
+                case "SPN": return 1;
+                case "SPH": return 2;
+                case "SPA": return 3;
+                case "SPL": return 4;
+                case "DPB": return 5;
+                case "DPN": return 6;
+                case "DPH": return 7;
+                case "DPA": return 8;
+                case "DPL": return 9;
+                default: return -1;
+            }
+        }
+        public static string IntToLamp(int lamp)
+        {
+            /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
+            switch (lamp)
+            {
+                case 0: return "NP";
+                case 1: return "F"; 
+                case 2: return "AC";
+                case 3: return "EC";
+                case 4: return "NC";
+                case 5: return "HC";
+                case 6: return "EX";
+                case 7: return "FC";
+                default: return "Unknown";
+            }
+        }
+        public static int LampToInt(string lamp)
+        {
+            switch (lamp)
+            {
+                case "NP": return 0;
+                case "F": return 1;
+                case "AC": return 2;
+                case "EC": return 3;
+                case "NC": return 4;
+                case "HC": return 5;
+                case "EX": return 6;
+                case "FC": return 7;
+                default: return -1;
+            }
+        }
     }
 }
