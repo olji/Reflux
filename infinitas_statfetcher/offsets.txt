@@ -1,4 +1,5 @@
-﻿songList = 0x141D4A160
-playData = 0x1414373D4
-judgeData = 0x1415E6378
-playSettings = 0x141437160
+﻿P2D:J:B:A:2021020300
+songList = 0x141D4B190
+playData = 0x1414383D4
+judgeData = 0x1415E73AC
+playSettings = 0x141438160
