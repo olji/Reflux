@@ -11,7 +11,7 @@
         public bool battle;
         public bool Hran;
 
-        public bool DataAvailable { get { return Hran || battle; } }
+        public bool DataAvailable { get { return !(Hran || battle); } }
         public void Fetch(long position, PlayType playstyle)
         {
             int word = 4;
