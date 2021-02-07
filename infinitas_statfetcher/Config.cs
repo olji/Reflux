@@ -8,6 +8,8 @@ namespace infinitas_statfetcher
     static class Config
     {
         public static string Server { get; private set; }
+        public static string UpdateServer { get; private set; }
+        public static bool UpdateFiles { get; private set; }
         public static string API_key { get; private set; }
         public static bool Output_songlist { get; private set; }
         public static bool Save_remote { get; private set; }
@@ -19,8 +21,11 @@ namespace infinitas_statfetcher
         public static void Parse(string configFile)
         {
             root = new ConfigurationBuilder().AddIniFile(configFile).Build();
-            Server = ReadConfigString("connection:serveraddress");
-            API_key = ReadConfigString("connection:apikey");
+            Server = ReadConfigString("remoterecord:serveraddress");
+            API_key = ReadConfigString("remoterecord:apikey");
+
+            UpdateFiles = ReadConfigBoolean("update:updatefiles");
+            UpdateServer = ReadConfigString("update:updateserver");
 
             Save_remote = ReadConfigBoolean("record:saveremote");
             Save_local = ReadConfigBoolean("record:savelocal");

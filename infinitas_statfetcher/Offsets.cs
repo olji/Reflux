@@ -5,6 +5,7 @@ namespace infinitas_statfetcher
 {
     static class Offsets
     {
+        public static string Version { get; private set; }
         public static long SongList { get; private set; }
         public static long JudgeData {get; private set; }
         public static long PlayData { get; private set; }
@@ -12,8 +13,16 @@ namespace infinitas_statfetcher
 
         public static void LoadOffsets(string filename)
         {
-            foreach (var line in File.ReadAllLines(filename))
+            var lines = File.ReadAllLines(filename);
+            for(int i = 0; i < lines.Length; i++)
             {
+                if (i == 0)
+                {
+                    Version = lines[i];
+                    continue;
+                }
+
+                var line = lines[i];
                 var sections = line.Split('=');
                 sections[0] = sections[0].Trim();
                 sections[1] = sections[1].Trim();
@@ -26,6 +35,11 @@ namespace infinitas_statfetcher
                     case "playsettings": PlaySettings = offset; break;
                 }
             }
+            Console.WriteLine("Offsets loaded:");
+            Console.WriteLine($"SongList: {SongList.ToString("X")}");
+            Console.WriteLine($"Playcard: {PlayData.ToString("X")}");
+            Console.WriteLine($"Judgeinfo: {JudgeData.ToString("X")}");
+            Console.WriteLine($"Playsettings: {PlaySettings.ToString("X")}");
         }
     }
 }

@@ -25,6 +25,7 @@ namespace infinitas_statfetcher
         int ex;
         string songID, grade, clearLamp;
         public bool DataAvailable { get { return settings.DataAvailable; } }
+        public bool PrematureEnd { get { return judges.prematureEnd; } }
 
         public PlayData()
         {

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,11 +12,13 @@ namespace infinitas_statfetcher
 {
     class Program
     {
+        [DllImport("kernel32.dll")]
+        public static extern bool ReadProcessMemory(int hProcess,
+            Int64 lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
         /* Import external methods */
         [DllImport("kernel32.dll")]
         public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
-        readonly static HttpClient client = new HttpClient();
         static void Main()
         {
             Process process = null;
@@ -51,75 +52,119 @@ namespace infinitas_statfetcher
             Console.WriteLine("Hooked to process, waiting until song list is loaded...");
 
 
-            Utils.LoadEncodingFixes();
-
             IntPtr processHandle = OpenProcess(0x0410, false, process.Id); /* Open process for memory read */
             Utils.handle = processHandle;
 
             var songDb = new Dictionary<string, SongInfo>();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+            var bm2dxModule = process.MainModule;
             Offsets.LoadOffsets("offsets.txt");
 
-
-            bool songlistFetched = false;
-            while (!songlistFetched)
+            Console.WriteLine($"Baseaddr is {bm2dxModule.BaseAddress.ToString("X")}");
+            byte[] buffer = new byte[80000000]; /* 80MB */
+            int nRead = 0;
+            ReadProcessMemory((int)processHandle, (long)bm2dxModule.BaseAddress, buffer, buffer.Length, ref nRead);
+            string versionSearch = "P2D:J:B:A:";
+            var str = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
+            bool correctVersion = false;
+            string foundVersion = "";
+            for (int i = 0; i < str.Length - Offsets.Version.Length; i++)
             {
-                while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
-                songDb = Utils.FetchSongDataBase();
-                if (songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
+
+                if (str.Substring(i, versionSearch.Length) == versionSearch)
                 {
-                    Console.WriteLine("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
-                    Thread.Sleep(5000);
-                }
-                else
-                {
-                    songlistFetched = true;
+                    foundVersion = str.Substring(i, Offsets.Version.Length);
+                    Console.WriteLine($"Found version {foundVersion} at address +0x{i.ToString("X")}");
+                    /* Don't break, first two versions appearing are referring to 2016-builds, actual version appears later */
                 }
             }
-            File.Create(sessionFile.FullName).Close();
-            WriteLine(sessionFile, Config.GetTsvHeader());
-
-            /* Primarily for debugging and checking for encoding issues */
-            if (Config.Output_songlist)
+            if (foundVersion != Offsets.Version)
             {
-                List<string> p = new List<string>() { "id\ttitle\ttitle2\tartist\tgenre" };
-                foreach (var v in songDb)
+                if (Config.UpdateFiles)
                 {
-                    p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
+                    Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version}), querying server for correct version");
+                    correctVersion = Network.UpdateOffset(foundVersion);
+                } else
+                {
+                    Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version}), memory dump hotkey enabled");
                 }
-                File.WriteAllLines("songs.csv", p.ToArray());
+                Network.UpdateEncodingFixes();
+            } else
+            {
+                correctVersion = true;
+            }
+            Utils.LoadEncodingFixes();
+
+            if (correctVersion)
+            {
+                bool songlistFetched = false;
+                while (!songlistFetched)
+                {
+                    while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
+                    songDb = Utils.FetchSongDataBase();
+                    if (songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
+                    {
+                        Console.WriteLine("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
+                        Thread.Sleep(5000);
+                    }
+                    else
+                    {
+                        songlistFetched = true;
+                    }
+                }
+                File.Create(sessionFile.FullName).Close();
+                WriteLine(sessionFile, Config.GetTsvHeader());
+
+                /* Primarily for debugging and checking for encoding issues */
+                if (Config.Output_songlist)
+                {
+                    List<string> p = new List<string>() { "id\ttitle\ttitle2\tartist\tgenre" };
+                    foreach (var v in songDb)
+                    {
+                        p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
+                    }
+                    File.WriteAllLines("songs.csv", p.ToArray());
+                }
             }
             GameState state = GameState.finished;
 
             while (!process.HasExited)
             {
-                var newstate = Utils.FetchGameState();
-                if (newstate != state)
+                if (correctVersion)
                 {
-                    Console.Clear();
-                    Console.WriteLine($"STATUS:{(newstate == GameState.finished ? " NOT" : "")} PLAYING");
-                    if (newstate == GameState.finished)
+                    var newstate = Utils.FetchGameState();
+                    if (newstate != state)
                     {
-                        var latestData = new PlayData();
-                        latestData.Fetch(songDb);
-                        if (Config.Save_remote)
+                        Console.Clear();
+                        Console.WriteLine($"STATUS:{(newstate == GameState.finished ? " NOT" : "")} PLAYING");
+                        if (newstate == GameState.finished)
                         {
-                            SendPlayData(latestData);
+                            var latestData = new PlayData();
+                            latestData.Fetch(songDb);
+                            if (latestData.PrematureEnd)
+                            {
+                                Console.WriteLine("Song didn't run to completion, won't upload data");
+                            }
+                            else if (Config.Save_remote)
+                            {
+                                Network.SendPlayData(latestData);
+                            }
+                            if (Config.Save_local)
+                            {
+                                WriteLine(sessionFile, latestData.GetTsvEntry());
+                            }
+                            Print_PlayData(latestData);
                         }
-                        if (Config.Save_local)
-                        {
-                            WriteLine(sessionFile, latestData.GetTsvEntry());
-                        }
-                        Print_PlayData(latestData);
                     }
+                    state = newstate;
+
+                    Thread.Sleep(2000);
                 }
-                state = newstate;
-
-                Thread.Sleep(2000);
+                else
+                {
+                }
             }
-
-            Cleanup();
         }
 
         static void Print_PlayData(PlayData latestData)
@@ -143,32 +188,6 @@ namespace infinitas_statfetcher
         static void DumpStackMemory()
         {
 
-        }
-
-        static async void SendPlayData(PlayData latestData)
-        {
-
-            var content = new FormUrlEncodedContent(latestData.ToPostForm());
-
-            try
-            {
-                var response = await client.PostAsync(Config.Server + "/api/songplayed", content);
-                //var response = await client.PostAsync("http://127.0.0.1:5000/api/songplayed", content);
-
-                var responseString = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(responseString);
-            }
-            catch
-            {
-                Console.WriteLine("Uploading failed");
-            }
-
-
-        }
-
-        private static void Cleanup()
-        {
-            /* Save files and whatever that should carry over sessions */
         }
 
     }
