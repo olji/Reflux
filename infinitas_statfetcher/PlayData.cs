@@ -116,7 +116,7 @@ namespace infinitas_statfetcher
         {
             return new Dictionary<string, string>
             {
-                { "apikey", "apikey" },
+                { "apikey", Config.API_key },
                 { "date", timestamp.ToString("s") },
                 { "title", chart.title },
                 { "title2", chart.title_english },
