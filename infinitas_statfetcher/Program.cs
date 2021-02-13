@@ -87,7 +87,7 @@ namespace infinitas_statfetcher
                     correctVersion = Network.UpdateOffset(foundVersion);
                 } else
                 {
-                    Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version}), memory dump hotkey enabled");
+                    Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version})");
                 }
                 Network.UpdateEncodingFixes();
             } else

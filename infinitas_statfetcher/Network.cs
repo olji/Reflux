@@ -50,7 +50,7 @@ namespace infinitas_statfetcher
                 return true;
             } else
             {
-                Console.WriteLine($"No offset file for version {version} available on server, enabling memory dump hotkey");
+                Console.WriteLine($"No offset file for version {version} available on server");
             }
             return false;
         }
