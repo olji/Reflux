@@ -10,49 +10,33 @@ namespace infinitas_statfetcher
     class Network
     {
         readonly static HttpClient client = new HttpClient();
-        static bool QueryOffsetAvailable(string version)
+        static string GetLatestOffset()
         {
-            var builder = new UriBuilder(Config.UpdateServer + "/api/offsetforversion");
-            var query = HttpUtility.ParseQueryString(builder.Query);
-            query["version"] = version;
-            builder.Query = query.ToString();
-            var response = client.GetAsync(builder.Uri, HttpCompletionOption.ResponseContentRead);
-            if(response.Result.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                return true;
-            }
-            return false;
-
-        }
-        static string GetNewOffsetVersion(string version)
-        {
-            var builder = new UriBuilder(Config.UpdateServer + "/api/getoffsetfile");
-            var query = HttpUtility.ParseQueryString(builder.Query);
-            query["version"] = version;
-            builder.Query = query.ToString();
-            var response = client.GetAsync(builder.Uri, HttpCompletionOption.ResponseContentRead);
-            var strtask = response.Result.Content.ReadAsStringAsync();
-            strtask.Wait();
-            return strtask.Result;
+            var builder = new UriBuilder(Config.UpdateServer + "/offsets.txt");
+            var response = client.GetStringAsync(builder.Uri);
+            response.Wait();
+            return response.Result;
         }
         public static bool UpdateOffset(string version)
         {
-            if (QueryOffsetAvailable(version))
+            var filecontent = GetLatestOffset();
+            var fileversion = "";
+            using (var reader = new StringReader(filecontent))
             {
-                var filecontent = GetNewOffsetVersion(version);
-                if (!Directory.Exists("archive")) {
-                    Directory.CreateDirectory("archive");
-                }
-                var v = File.ReadAllLines("offsets.txt")[0];
-                File.Move("offsets.txt", $"archive/{v.Replace(':', '_')}.txt", true);
-                File.WriteAllText("offsets.txt", filecontent);
-                Offsets.LoadOffsets("offsets.txt");
-                return true;
-            } else
-            {
-                Console.WriteLine($"No offset file for version {version} available on server");
+                fileversion = reader.ReadLine().Trim(); /* Handles several kinds of newline formats */
             }
-            return false;
+            if (fileversion != version) {
+                Console.WriteLine($"Latest offsets available are for build {fileversion}, which didn't match detected version {version}");
+                return false;
+            }
+            if (!Directory.Exists("archive")) {
+                Directory.CreateDirectory("archive");
+            }
+            var v = File.ReadAllLines("offsets.txt")[0];
+            File.Move("offsets.txt", $"archive/{v.Replace(':', '_')}.txt", true);
+            File.WriteAllText("offsets.txt", filecontent);
+            Offsets.LoadOffsets("offsets.txt");
+            return true;
         }
         public static void UpdateEncodingFixes()
         {
