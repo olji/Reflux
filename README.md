@@ -9,8 +9,6 @@ Memory offsets used to find the relevant information is stored in a file along w
 If no match it will check for an applicable offset file on a configurable server.
 This behaviour can be turned off if unwanted.
 
-If the build versions of the binary and the offset file doesn't match, the software will register a keyboard hook to take manual memory dumps that can be used. These will later be attempted to be parsed and saved when the offset file version matches at a later date.
-
 # Todo
 - Auto-update encoding fixes-list
 - Keyboard hook for manual memdumps
