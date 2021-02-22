@@ -3,3 +3,4 @@ songList = 0x141D4B190
 playData = 0x1414383D4
 judgeData = 0x1415E73AC
 playSettings = 0x141438160
+unlockdata = 0x1415E9E70

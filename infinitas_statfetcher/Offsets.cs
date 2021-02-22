@@ -10,6 +10,7 @@ namespace infinitas_statfetcher
         public static long JudgeData {get; private set; }
         public static long PlayData { get; private set; }
         public static long PlaySettings { get; private set; }
+        public static long UnlockData { get; private set; }
 
         public static void LoadOffsets(string filename)
         {
@@ -32,14 +33,16 @@ namespace infinitas_statfetcher
                     case "judgedata": JudgeData = offset; break;
                     case "playdata": PlayData = offset; break;
                     case "songlist": SongList = offset; break;
+                    case "unlockdata": UnlockData = offset; break;
                     case "playsettings": PlaySettings = offset; break;
                 }
             }
             Console.WriteLine("Offsets loaded:");
-            Console.WriteLine($"SongList: {SongList.ToString("X")}");
-            Console.WriteLine($"Playcard: {PlayData.ToString("X")}");
-            Console.WriteLine($"Judgeinfo: {JudgeData.ToString("X")}");
-            Console.WriteLine($"Playsettings: {PlaySettings.ToString("X")}");
+            Console.WriteLine($"SongList: {SongList:X}");
+            Console.WriteLine($"UnlockData: {UnlockData:X}");
+            Console.WriteLine($"Playcard: {PlayData:X}");
+            Console.WriteLine($"Judgeinfo: {JudgeData:X}");
+            Console.WriteLine($"Playsettings: {PlaySettings:X}");
         }
     }
 }
