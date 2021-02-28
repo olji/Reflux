@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -75,7 +76,7 @@ namespace infinitas_statfetcher
                 if (str.Substring(i, versionSearch.Length) == versionSearch)
                 {
                     foundVersion = str.Substring(i, Offsets.Version.Length);
-                    Console.WriteLine($"Found version {foundVersion} at address +0x{i.ToString("X")}");
+                    Console.WriteLine($"Found version {foundVersion} at address +0x{i:X}");
                     /* Don't break, first two versions appearing are referring to 2016-builds, actual version appears later */
                 }
             }
@@ -124,9 +125,11 @@ namespace infinitas_statfetcher
                     {
                         p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
                     }
-                    File.WriteAllLines("songs.csv", p.ToArray());
+                    File.WriteAllLines("songs.tsv", p.ToArray());
                 }
             }
+            var unlocks = Utils.GetUnlockStates(songDb.Count);
+            
             GameState state = GameState.finished;
 
             while (!process.HasExited)
@@ -159,12 +162,19 @@ namespace infinitas_statfetcher
                     }
                     state = newstate;
 
+                    if(state == GameState.finished)
+                    {
+                        unlocks = Utils.GetUnlockStates(songDb.Count);
+                        Utils.SaveUnlockStates("unlocks.tsv", songDb, unlocks);
+                    }
+
                     Thread.Sleep(2000);
                 }
                 else
                 {
                 }
             }
+            Utils.SaveUnlockStates("unlocks.tsv", songDb, unlocks);
         }
 
         static void Print_PlayData(PlayData latestData)
@@ -194,7 +204,6 @@ namespace infinitas_statfetcher
 
     #region Custom objects
     enum GameState { started = 0, finished };
-    enum OffSetCategories { judgeInfo = 0, noteInfo, songInfo }
     public enum PlayType { P1 = 0, P2, DP }
     public struct SongInfo
     {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -156,6 +157,13 @@ namespace infinitas_statfetcher
             }
             return result;
         }
+        public enum unlockType { Base = 1, Bits, Hidden }; // Hidden being potentially hidden from you, as with subscription songs or song packs
+        [StructLayout(LayoutKind.Sequential)]
+        public struct UnlockData {
+            public Int32 songID; 
+            public unlockType type;
+            public Int32 unlocks;
+        };
         static Int32 BytesToInt32(byte[] input, int skip, int take)
         {
             if (skip == 0)
@@ -226,6 +234,73 @@ namespace infinitas_statfetcher
                 case "FC": return 7;
                 default: return -1;
             }
+        }
+
+        public static Dictionary<string, UnlockData> GetUnlockStates(int songAmount)
+        {
+            int structSize = Marshal.SizeOf(typeof(UnlockData));
+            byte[] buf = new byte[structSize * songAmount];
+            int nRead = 0;
+
+            /* Read information for all songs at once and cast to struct array after */
+            ReadProcessMemory((int)handle, Offsets.UnlockData, buf, buf.Length, ref nRead);
+
+            Dictionary<string, UnlockData> result = new Dictionary<string, UnlockData>();
+            int position = 0;
+            while(position < buf.Length)
+            {
+                var sData = buf.Skip(position).Take(structSize).ToArray();
+                UnlockData data = new UnlockData { songID = BytesToInt32(sData, 0, 4), type = (unlockType)BytesToInt32(sData, 4, 4), unlocks = BytesToInt32(sData, 8, 4) };
+                result.Add(data.songID.ToString("D5"), data);
+
+                position += structSize;
+            }
+            IntPtr p = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnlockData)) * songAmount);
+            Marshal.Copy(buf, 0, p, songAmount);
+
+            return result;
+        }
+        static string SongToUnlockEntry(string songTitle, UnlockData song)
+        {
+            //StringBuilder sb = new StringBuilder("title\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
+            StringBuilder sb = new StringBuilder($"{songTitle}\t");
+
+            var unlockWord = new BitVector32(song.unlocks);
+            var SPB = BitVector32.CreateMask();
+            var SPN = BitVector32.CreateMask(SPB);
+            var SPH = BitVector32.CreateMask(SPN);
+            var SPA = BitVector32.CreateMask(SPH);
+            var SPL = BitVector32.CreateMask(SPA);
+            var DPB = BitVector32.CreateMask(SPL);
+            var DPN = BitVector32.CreateMask(DPB);
+            var DPH = BitVector32.CreateMask(DPN);
+            var DPA = BitVector32.CreateMask(DPH);
+            var DPL = BitVector32.CreateMask(DPA);
+
+            sb.Append($"{unlockWord[SPN]}\t");
+            sb.Append($"{unlockWord[SPH]}\t");
+            sb.Append($"{unlockWord[SPA]}\t");
+            sb.Append($"{unlockWord[DPN]}\t");
+            sb.Append($"{unlockWord[DPH]}\t");
+            sb.Append($"{unlockWord[DPA]}");
+
+            return sb.ToString();
+        }
+        public static void SaveUnlockStates(string filename, Dictionary<string, SongInfo> db, Dictionary<string, UnlockData> unlocks)
+        {
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("title\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
+            foreach(var song in unlocks)
+            {
+                try
+                {
+                    sb.AppendLine(Utils.SongToUnlockEntry(db[song.Key].title, song.Value));
+                } catch
+                {
+                }
+            }
+            File.WriteAllText(filename, sb.ToString());
         }
     }
 }
