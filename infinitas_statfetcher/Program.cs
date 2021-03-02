@@ -143,6 +143,7 @@ namespace infinitas_statfetcher
                         Console.WriteLine($"STATUS:{(newstate == GameState.finished ? " NOT" : "")} PLAYING");
                         if (newstate == GameState.finished)
                         {
+                            Thread.Sleep(1000); /* Sleep to avoid race condition */
                             var latestData = new PlayData();
                             latestData.Fetch(songDb);
                             if (latestData.PrematureEnd)
