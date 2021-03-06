@@ -62,7 +62,7 @@ namespace infinitas_statfetcher
             var bm2dxModule = process.MainModule;
             Offsets.LoadOffsets("offsets.txt");
 
-            Console.WriteLine($"Baseaddr is {bm2dxModule.BaseAddress.ToString("X")}");
+            Utils.Debug($"Baseaddr is {bm2dxModule.BaseAddress.ToString("X")}");
             byte[] buffer = new byte[80000000]; /* 80MB */
             int nRead = 0;
             ReadProcessMemory((int)processHandle, (long)bm2dxModule.BaseAddress, buffer, buffer.Length, ref nRead);
@@ -76,7 +76,7 @@ namespace infinitas_statfetcher
                 if (str.Substring(i, versionSearch.Length) == versionSearch)
                 {
                     foundVersion = str.Substring(i, Offsets.Version.Length);
-                    Console.WriteLine($"Found version {foundVersion} at address +0x{i:X}");
+                    Utils.Debug($"Found version {foundVersion} at address +0x{i:X}");
                     /* Don't break, first two versions appearing are referring to 2016-builds, actual version appears later */
                 }
             }
@@ -106,7 +106,7 @@ namespace infinitas_statfetcher
                     songDb = Utils.FetchSongDataBase();
                     if (songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
                     {
-                        Console.WriteLine("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
+                        Utils.Debug("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
                         Thread.Sleep(5000);
                     }
                     else
@@ -132,6 +132,8 @@ namespace infinitas_statfetcher
             
             GameState state = GameState.finished;
 
+            Console.WriteLine("Initialized and ready");
+
             while (!process.HasExited)
             {
                 if (correctVersion)
@@ -146,11 +148,7 @@ namespace infinitas_statfetcher
                             Thread.Sleep(1000); /* Sleep to avoid race condition */
                             var latestData = new PlayData();
                             latestData.Fetch(songDb);
-                            if (latestData.PrematureEnd)
-                            {
-                                Console.WriteLine("Song didn't run to completion, won't upload data");
-                            }
-                            else if (Config.Save_remote)
+                            if (Config.Save_remote)
                             {
                                 Network.SendPlayData(latestData);
                             }
@@ -165,8 +163,12 @@ namespace infinitas_statfetcher
 
                     if(state == GameState.finished)
                     {
-                        unlocks = Utils.GetUnlockStates(songDb.Count);
+                        var newUnlocks = Utils.UpdateUnlockStates(unlocks);
                         Utils.SaveUnlockStates("unlocks.tsv", songDb, unlocks);
+                        if(newUnlocks.Count > 0)
+                        {
+                            Network.ReportUnlocks(songDb, newUnlocks);
+                        }
                     }
 
                     Thread.Sleep(2000);

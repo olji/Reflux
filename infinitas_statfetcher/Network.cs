@@ -38,9 +38,23 @@ namespace infinitas_statfetcher
             Offsets.LoadOffsets("offsets.txt");
             return true;
         }
+        public static async void ReportUnlocks(Dictionary<string,SongInfo> songdb, Dictionary<string, Utils.UnlockData> unlocks)
+        {
+            foreach(var keyval in unlocks)
+            {
+                var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+                {
+                    { "songid", keyval.Key },
+                    { "title2", songdb[keyval.Key].title_english },
+                    { "state", keyval.Value.unlocks.ToString()}
+                }
+                );
+                var response = await client.PostAsync(Config.Server + "/api/unlocksong", content);
+                Utils.Debug(await response.Content.ReadAsStringAsync());
+            }
+        }
         public static void UpdateEncodingFixes()
         {
-
         }
         public static async void SendPlayData(PlayData latestData)
         {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Diagnostics;
 
 namespace infinitas_statfetcher
 {
@@ -45,7 +46,7 @@ namespace infinitas_statfetcher
             ReadProcessMemory((int)handle, Offsets.SongList, buffer, buffer.Length, ref nRead);
             var title = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Where(x => x != 0).ToArray());
             var titleNoFilter = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
-            Console.WriteLine($"Read string: \"{title}\", expecting \"5.1.1.\"");
+            Debug($"Read string: \"{title}\", expecting \"5.1.1.\"");
             return title.Contains("5.1.1.");
         }
         public static Int32 ReadInt32(long position, int offset, int size)
@@ -122,7 +123,7 @@ namespace infinitas_statfetcher
         public static Dictionary<string, SongInfo> FetchSongDataBase()
         {
             Dictionary<string, SongInfo> result = new Dictionary<string, SongInfo>();
-            Console.WriteLine("Fetching available songs");
+            Debug("Fetching available songs");
             var current_position = 0;
             while (true)
             {
@@ -131,7 +132,7 @@ namespace infinitas_statfetcher
 
                 if (songInfo.title == null)
                 {
-                    Console.WriteLine("Songs fetched.");
+                    Debug("Songs fetched.");
                     break;
                 }
 
@@ -139,13 +140,13 @@ namespace infinitas_statfetcher
                 {
                     var old = songInfo.title;
                     songInfo.title = knownEncodingIssues[songInfo.title];
-                    Console.WriteLine($"Fixed encoding issue \"{old}\" with \"{songInfo.title}\"");
+                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.title}\"");
                 }
                 if (knownEncodingIssues.ContainsKey(songInfo.artist))
                 {
                     var old = songInfo.artist;
                     songInfo.artist = knownEncodingIssues[songInfo.artist];
-                    Console.WriteLine($"Fixed encoding issue \"{old}\" with \"{songInfo.artist}\"");
+                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.artist}\"");
                 }
                 if (!result.ContainsKey(songInfo.ID))
                 {
@@ -236,6 +237,26 @@ namespace infinitas_statfetcher
             }
         }
 
+        /// <summary>
+        /// Update and detect changes to song unlock states
+        /// </summary>
+        /// <param name="unlocks"></param>
+        /// <returns>Changes between the two unlock statuses</returns>
+        public static Dictionary<string, UnlockData> UpdateUnlockStates(Dictionary<string, UnlockData> unlocks)
+        {
+            var newUnlock = GetUnlockStates(unlocks.Count);
+            var changes = new Dictionary<string, UnlockData>();
+            foreach(var key in newUnlock.Keys)
+            {
+                if(newUnlock[key].unlocks != unlocks[key].unlocks)
+                {
+                    UnlockData value = newUnlock[key];
+                    changes.Add(key, value);
+                    unlocks[key] = newUnlock[key];
+                }
+            }
+            return changes;
+        }
         public static Dictionary<string, UnlockData> GetUnlockStates(int songAmount)
         {
             int structSize = Marshal.SizeOf(typeof(UnlockData));
@@ -263,7 +284,7 @@ namespace infinitas_statfetcher
         static string SongToUnlockEntry(string songTitle, UnlockData song)
         {
             //StringBuilder sb = new StringBuilder("title\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
-            StringBuilder sb = new StringBuilder($"{songTitle}\t");
+            StringBuilder sb = new StringBuilder($"{songTitle}\t{song.type.ToString()}");
 
             var unlockWord = new BitVector32(song.unlocks);
             var SPB = BitVector32.CreateMask();
@@ -290,7 +311,7 @@ namespace infinitas_statfetcher
         {
 
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("title\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
+            sb.AppendLine("title\tType\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
             foreach(var song in unlocks)
             {
                 try
@@ -301,6 +322,11 @@ namespace infinitas_statfetcher
                 }
             }
             File.WriteAllText(filename, sb.ToString());
+        }
+        [Conditional("DEBUG")]
+        public static void Debug(string msg)
+        {
+            Console.WriteLine(msg);
         }
     }
 }
