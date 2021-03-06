@@ -14,6 +14,7 @@ namespace infinitas_statfetcher
         public string artist;
         public string genre;
         public string bpm;
+        public string songid;
     }
     class PlayData
     {
@@ -34,7 +35,7 @@ namespace infinitas_statfetcher
         }
         public void Fetch(Dictionary<string, SongInfo> songDb)
         {
-            judges.Fetch(Offsets.JudgeData);
+            judges.Fetch(Offsets.JudgeData, Offsets.NotesProgress);
             settings.Fetch(Offsets.PlaySettings, judges.playtype);
 
             if (!settings.DataAvailable)
@@ -109,6 +110,7 @@ namespace infinitas_statfetcher
             result.artist = song.artist;
             result.genre = song.genre;
             result.bpm = song.bpm;
+            result.songid = song.ID;
             return result;
 
         }
@@ -117,7 +119,7 @@ namespace infinitas_statfetcher
             return new Dictionary<string, string>
             {
                 { "apikey", Config.API_key },
-                { "date", timestamp.ToString("s") },
+                { "songid", chart.songid },
                 { "title", chart.title },
                 { "title2", chart.title_english },
                 { "bpm", chart.bpm },
@@ -130,6 +132,7 @@ namespace infinitas_statfetcher
                 { "gaugepercent", gauge.ToString() },
                 { "lamp", clearLamp },
                 { "exscore", ex.ToString() },
+                { "notesjudged", judges.notesJudged.ToString() },
                 { "pgreat", judges.pgreat.ToString() },
                 { "great", judges.great.ToString() },
                 { "good", judges.good.ToString() },
