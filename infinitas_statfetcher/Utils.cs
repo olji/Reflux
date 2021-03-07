@@ -9,6 +9,26 @@ using System.Diagnostics;
 
 namespace infinitas_statfetcher
 {
+    public struct SongInfo
+    {
+        public string ID;
+        public int[] totalNotes; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
+        public int[] level; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
+        public string title;
+        public string title_english;
+        public string artist;
+        public unlockType type;
+        public string genre;
+        public string bpm;
+    }
+    public enum unlockType { Base = 1, Bits, Hidden }; // Hidden being potentially hidden from you, as with subscription songs or song packs
+    [StructLayout(LayoutKind.Sequential)]
+    public struct UnlockData
+    {
+        public Int32 songID;
+        public unlockType type;
+        public Int32 unlocks;
+    };
     class Utils
     {
         [DllImport("kernel32.dll")]
@@ -16,6 +36,8 @@ namespace infinitas_statfetcher
             Int64 lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
         public static IntPtr handle;
+        public static Dictionary<string, UnlockData> unlockDb = new Dictionary<string, UnlockData>();
+        public static Dictionary<string, SongInfo> songDb = new Dictionary<string, SongInfo>();
         readonly static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
 
         public static void LoadEncodingFixes()
@@ -120,7 +142,7 @@ namespace infinitas_statfetcher
             return song;
 
         }
-        public static Dictionary<string, SongInfo> FetchSongDataBase()
+        public static void FetchSongDataBase()
         {
             Dictionary<string, SongInfo> result = new Dictionary<string, SongInfo>();
             Debug("Fetching available songs");
@@ -156,15 +178,8 @@ namespace infinitas_statfetcher
                 current_position += 0x3F0;
 
             }
-            return result;
+            songDb = result;
         }
-        public enum unlockType { Base = 1, Bits, Hidden }; // Hidden being potentially hidden from you, as with subscription songs or song packs
-        [StructLayout(LayoutKind.Sequential)]
-        public struct UnlockData {
-            public Int32 songID; 
-            public unlockType type;
-            public Int32 unlocks;
-        };
         static Int32 BytesToInt32(byte[] input, int skip, int take)
         {
             if (skip == 0)
@@ -242,23 +257,25 @@ namespace infinitas_statfetcher
         /// </summary>
         /// <param name="unlocks"></param>
         /// <returns>Changes between the two unlock statuses</returns>
-        public static Dictionary<string, UnlockData> UpdateUnlockStates(Dictionary<string, UnlockData> unlocks)
+        public static Dictionary<string, UnlockData> UpdateUnlockStates()
         {
-            var newUnlock = GetUnlockStates(unlocks.Count);
+            var oldUnlocks = unlockDb;
+            GetUnlockStates();
             var changes = new Dictionary<string, UnlockData>();
-            foreach(var key in newUnlock.Keys)
+            foreach(var key in unlockDb.Keys)
             {
-                if(newUnlock[key].unlocks != unlocks[key].unlocks)
+                if(unlockDb[key].unlocks != oldUnlocks[key].unlocks)
                 {
-                    UnlockData value = newUnlock[key];
+                    UnlockData value = unlockDb[key];
                     changes.Add(key, value);
-                    unlocks[key] = newUnlock[key];
+                    oldUnlocks[key] = unlockDb[key];
                 }
             }
             return changes;
         }
-        public static Dictionary<string, UnlockData> GetUnlockStates(int songAmount)
+        public static Dictionary<string, UnlockData> GetUnlockStates()
         {
+            int songAmount = songDb.Count;
             int structSize = Marshal.SizeOf(typeof(UnlockData));
             byte[] buf = new byte[structSize * songAmount];
             int nRead = 0;
@@ -266,25 +283,51 @@ namespace infinitas_statfetcher
             /* Read information for all songs at once and cast to struct array after */
             ReadProcessMemory((int)handle, Offsets.UnlockData, buf, buf.Length, ref nRead);
 
-            Dictionary<string, UnlockData> result = new Dictionary<string, UnlockData>();
+            unlockDb = new Dictionary<string, UnlockData>();
+            var extra = ParseUnlockBuffer(buf);
+
+            /* Handle offset issues caused by unlock data having information on songs not present in song db */
+            int moreExtra = 0;
+            while(extra > 0)
+            {
+                buf = new byte[structSize * extra];
+                ReadProcessMemory((int)handle, Offsets.UnlockData + structSize * (songAmount + moreExtra), buf, buf.Length, ref nRead);
+                moreExtra = ParseUnlockBuffer(buf);
+                extra = moreExtra;
+            }
+
+            return unlockDb;
+        }
+        static int ParseUnlockBuffer(byte[] buf)
+        {
             int position = 0;
+            int extra = 0;
+            int structSize = Marshal.SizeOf(typeof(UnlockData));
             while(position < buf.Length)
             {
                 var sData = buf.Skip(position).Take(structSize).ToArray();
                 UnlockData data = new UnlockData { songID = BytesToInt32(sData, 0, 4), type = (unlockType)BytesToInt32(sData, 4, 4), unlocks = BytesToInt32(sData, 8, 4) };
-                result.Add(data.songID.ToString("D5"), data);
+                string id = data.songID.ToString("D5");
+                unlockDb.Add(id, data);
+                try
+                {
+                    var song = songDb[id];
+                    song.type = data.type;
+                    songDb[id] = song;
+                } catch
+                {
+                    Debug($"Song {id} not present in song database");
+                    extra++;
+                }
 
                 position += structSize;
             }
-            IntPtr p = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnlockData)) * songAmount);
-            Marshal.Copy(buf, 0, p, songAmount);
+            return extra;
 
-            return result;
         }
         static string SongToUnlockEntry(string songTitle, UnlockData song)
         {
-            //StringBuilder sb = new StringBuilder("title\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
-            StringBuilder sb = new StringBuilder($"{songTitle}\t{song.type.ToString()}");
+            StringBuilder sb = new StringBuilder($"{songTitle}\t{song.type.ToString()}\t");
 
             var unlockWord = new BitVector32(song.unlocks);
             var SPB = BitVector32.CreateMask();
@@ -307,21 +350,34 @@ namespace infinitas_statfetcher
 
             return sb.ToString();
         }
-        public static void SaveUnlockStates(string filename, Dictionary<string, SongInfo> db, Dictionary<string, UnlockData> unlocks)
+        public static void SaveUnlockStates(string filename)
         {
 
             StringBuilder sb = new StringBuilder();
+            StringBuilder db = new StringBuilder();
             sb.AppendLine("title\tType\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
-            foreach(var song in unlocks)
+            foreach(var song in unlockDb)
             {
                 try
                 {
-                    sb.AppendLine(Utils.SongToUnlockEntry(db[song.Key].title, song.Value));
+                    sb.AppendLine(Utils.SongToUnlockEntry(songDb[song.Key].title, song.Value));
+                    db.AppendLine($"{song.Key},{song.Value.unlocks}");
                 } catch
                 {
                 }
             }
             File.WriteAllText(filename, sb.ToString());
+            File.WriteAllText("unlockdb", db.ToString());
+        }
+        public static bool GetUnlockStateForDifficulty(string songid, int diff)
+        {
+            var unlockBits = unlockDb[songid].unlocks;
+            int bit = 1 << diff;
+            return (bit & unlockBits) > 0;
+        }
+        public static bool GetUnlockStateForDifficulty(string songid, string diff)
+        {
+            return GetUnlockStateForDifficulty(songid, DiffToInt(diff));
         }
         [Conditional("DEBUG")]
         public static void Debug(string msg)

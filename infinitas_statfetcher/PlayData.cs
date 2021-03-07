@@ -8,6 +8,7 @@ namespace infinitas_statfetcher
     {
         public int totalNotes;
         public int level;
+        public bool unlocked;
         public string title;
         public string title_english;
         public string difficulty;
@@ -33,8 +34,9 @@ namespace infinitas_statfetcher
             judges = new Judge();
             settings = new Settings();
         }
-        public void Fetch(Dictionary<string, SongInfo> songDb)
+        public void Fetch()
         {
+
             judges.Fetch(Offsets.JudgeData, Offsets.NotesProgress);
             settings.Fetch(Offsets.PlaySettings, judges.playtype);
 
@@ -54,10 +56,10 @@ namespace infinitas_statfetcher
 
             songID = song.ToString("00000");
 
-            chart = FetchChartInfo(songDb[songID], diffVal);
+            chart = FetchChartInfo(Utils.songDb[songID], diffVal);
 
 
-            var maxEx = songDb[songID].totalNotes[diffVal] * 2;
+            var maxEx = Utils.songDb[songID].totalNotes[diffVal] * 2;
             var exPart = (double)maxEx / 9;
 
             var exscore = (judges.pgreat * 2 + judges.great);
@@ -111,6 +113,7 @@ namespace infinitas_statfetcher
             result.genre = song.genre;
             result.bpm = song.bpm;
             result.songid = song.ID;
+            result.unlocked = Utils.GetUnlockStateForDifficulty(song.ID, diffVal);
             return result;
 
         }
@@ -128,6 +131,7 @@ namespace infinitas_statfetcher
                 { "notecount", chart.totalNotes.ToString() },
                 { "diff", chart.difficulty },
                 { "level", chart.level.ToString() },
+                { "unlocked", chart.unlocked.ToString() },
                 { "grade", grade },
                 { "gaugepercent", gauge.ToString() },
                 { "lamp", clearLamp },

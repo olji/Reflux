@@ -25,6 +25,23 @@ namespace infinitas_statfetcher
             Process process = null;
             Config.Parse("config.ini");
 
+            Dictionary<string, int> unlock_db = new Dictionary<string, int>();
+            bool init = false;
+            try
+            {
+                foreach (var line in File.ReadAllLines("unlockdb"))
+                {
+                    var s = line.Split(',');
+                    unlock_db.Add(s[0], int.Parse(s[1]));
+                }
+            } catch (FileNotFoundException e)
+            {
+                init = true;
+                if (Config.Save_remote)
+                {
+                    Console.WriteLine("unlockdb not found, will initialize all songs on remote server");
+                }
+            }
             DirectoryInfo sessionDir = new DirectoryInfo("sessions");
             if (!sessionDir.Exists)
             {
@@ -56,7 +73,6 @@ namespace infinitas_statfetcher
             IntPtr processHandle = OpenProcess(0x0410, false, process.Id); /* Open process for memory read */
             Utils.handle = processHandle;
 
-            var songDb = new Dictionary<string, SongInfo>();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             var bm2dxModule = process.MainModule;
@@ -103,8 +119,8 @@ namespace infinitas_statfetcher
                 while (!songlistFetched)
                 {
                     while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
-                    songDb = Utils.FetchSongDataBase();
-                    if (songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
+                    Utils.FetchSongDataBase();
+                    if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
                     {
                         Utils.Debug("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
                         Thread.Sleep(5000);
@@ -121,19 +137,30 @@ namespace infinitas_statfetcher
                 if (Config.Output_songlist)
                 {
                     List<string> p = new List<string>() { "id\ttitle\ttitle2\tartist\tgenre" };
-                    foreach (var v in songDb)
+                    foreach (var v in Utils.songDb)
                     {
                         p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
                     }
                     File.WriteAllLines("songs.tsv", p.ToArray());
                 }
             }
-            var unlocks = Utils.GetUnlockStates(songDb.Count);
+
+            Utils.GetUnlockStates();
+            /* Check for new songs */
+            foreach (var song in Utils.songDb)
+            {
+                if (!unlock_db.ContainsKey(song.Key) || init)
+                {
+                    Network.UploadSongInfo(song.Key);
+                }
+            }
+
             
             GameState state = GameState.finished;
 
             Console.WriteLine("Initialized and ready");
 
+            /* Main loop */
             while (!process.HasExited)
             {
                 if (correctVersion)
@@ -147,7 +174,7 @@ namespace infinitas_statfetcher
                         {
                             Thread.Sleep(1000); /* Sleep to avoid race condition */
                             var latestData = new PlayData();
-                            latestData.Fetch(songDb);
+                            latestData.Fetch();
                             if (Config.Save_remote)
                             {
                                 Network.SendPlayData(latestData);
@@ -163,11 +190,11 @@ namespace infinitas_statfetcher
 
                     if(state == GameState.finished)
                     {
-                        var newUnlocks = Utils.UpdateUnlockStates(unlocks);
-                        Utils.SaveUnlockStates("unlocks.tsv", songDb, unlocks);
+                        var newUnlocks = Utils.UpdateUnlockStates();
+                        Utils.SaveUnlockStates("unlocks.tsv");
                         if(newUnlocks.Count > 0)
                         {
-                            Network.ReportUnlocks(songDb, newUnlocks);
+                            Network.ReportUnlocks(newUnlocks);
                         }
                     }
 
@@ -177,7 +204,7 @@ namespace infinitas_statfetcher
                 {
                 }
             }
-            Utils.SaveUnlockStates("unlocks.tsv", songDb, unlocks);
+            Utils.SaveUnlockStates("unlocks.tsv");
         }
 
         static void Print_PlayData(PlayData latestData)
@@ -208,16 +235,5 @@ namespace infinitas_statfetcher
     #region Custom objects
     enum GameState { started = 0, finished };
     public enum PlayType { P1 = 0, P2, DP }
-    public struct SongInfo
-    {
-        public string ID;
-        public int[] totalNotes; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
-        public int[] level; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
-        public string title;
-        public string title_english;
-        public string artist;
-        public string genre;
-        public string bpm;
-    }
     #endregion
 }

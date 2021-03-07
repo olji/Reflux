@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Text;
 using System.Net.Http;
 using System.IO;
@@ -38,14 +39,13 @@ namespace infinitas_statfetcher
             Offsets.LoadOffsets("offsets.txt");
             return true;
         }
-        public static async void ReportUnlocks(Dictionary<string,SongInfo> songdb, Dictionary<string, Utils.UnlockData> unlocks)
+        public static async void ReportUnlocks(Dictionary<string, UnlockData> unlocks)
         {
-            foreach(var keyval in unlocks)
+            foreach (var keyval in unlocks)
             {
                 var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
                     { "songid", keyval.Key },
-                    { "title2", songdb[keyval.Key].title_english },
                     { "state", keyval.Value.unlocks.ToString()}
                 }
                 );
@@ -73,6 +73,62 @@ namespace infinitas_statfetcher
                 Console.WriteLine("Uploading failed");
             }
         }
+        public static async void AddSong(SongInfo song)
+        {
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+                {
+                    { "songid", song.ID },
+                    { "unlockType", song.type.ToString() },
+                    { "title", song.title},
+                    { "title2", song.title_english},
+                    { "artist", song.artist},
+                    { "genre", song.genre},
+                    { "bpm", song.bpm}
+                }
+            );
+            var response = await client.PostAsync(Config.Server + "/api/addsong", content);
+            Utils.Debug(await response.Content.ReadAsStringAsync());
+        }
+        public static async void AddChart(ChartInfo chart)
+        {
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+                {
+                    { "songid", chart.songid },
+                    { "unlocked", chart.unlocked.ToString() },
+                    { "diff", chart.difficulty.ToString()},
+                    { "level", chart.level.ToString()},
+                    { "notecount", chart.totalNotes.ToString()}
+                }
+            );
+            var response = await client.PostAsync(Config.Server + "/api/addchart", content);
+            Utils.Debug(await response.Content.ReadAsStringAsync());
 
+        }
+
+        public static async void UploadSongInfo(string songid)
+        {
+            var song = Utils.songDb[songid];
+
+            Utils.Debug($"Song {songid}");
+
+            AddSong(song);
+
+            for (int i = 0; i < song.level.Length; i++)
+            {
+                if (i == 0 || i == 5 || song.level[i] == 0) { continue; }
+
+                Thread.Sleep(10);
+                ChartInfo chart = new ChartInfo() {
+                    level = song.level[i],
+                    songid = songid,
+                    difficulty = Utils.IntToDiff(i),
+                    totalNotes = song.totalNotes[i],
+                    unlocked = Utils.GetUnlockStateForDifficulty(songid, i)
+                };
+
+                AddChart(chart);
+
+            }
+        }
     }
 }
