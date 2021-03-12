@@ -119,6 +119,7 @@ namespace infinitas_statfetcher
                 while (!songlistFetched)
                 {
                     while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
+                    Thread.Sleep(1000); /* Extra sleep just to avoid potentially undiscovered race conditions */
                     Utils.FetchSongDataBase();
                     if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
                     {
