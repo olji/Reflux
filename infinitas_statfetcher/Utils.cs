@@ -68,8 +68,12 @@ namespace infinitas_statfetcher
             ReadProcessMemory((int)handle, Offsets.SongList, buffer, buffer.Length, ref nRead);
             var title = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Where(x => x != 0).ToArray());
             var titleNoFilter = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
-            Debug($"Read string: \"{title}\", expecting \"5.1.1.\"");
-            return title.Contains("5.1.1.");
+            buffer = new byte[4];
+            ReadProcessMemory((int)handle, Offsets.UnlockData, buffer, buffer.Length, ref nRead);
+            var id = Utils.BytesToInt32(buffer, 0, 4);
+            Debug($"Read string: \"{title}\" in start of song list, expecting \"5.1.1.\"");
+            Debug($"Read number: {id} in start of unlock list, expecting 1000");
+            return title.Contains("5.1.1.") && id == 1000;
         }
         public static Int32 ReadInt32(long position, int offset, int size)
         {
