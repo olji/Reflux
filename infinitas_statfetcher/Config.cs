@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Ini;
 
@@ -16,11 +17,17 @@ namespace infinitas_statfetcher
         public static bool Save_local { get; private set; }
         public static HeaderValues HeaderConfig { get { return header; } }
         static HeaderValues header;
-        static IConfigurationRoot root;
+        static IDictionary<string, string> config;
 
         public static void Parse(string configFile)
         {
-            root = new ConfigurationBuilder().AddIniFile(configFile).Build();
+            using (var stream = new System.IO.FileStream(configFile, System.IO.FileMode.OpenOrCreate))
+            {
+                config = IniStreamConfigurationProvider.Read(stream);
+            }
+
+            Utils.Debug("Loading config...");
+
             Server = ReadConfigString("remoterecord:serveraddress");
             API_key = ReadConfigString("remoterecord:apikey");
 
@@ -37,24 +44,32 @@ namespace infinitas_statfetcher
             header.settings = ReadConfigBoolean("localrecord:settings");
 
             Output_songlist = ReadConfigBoolean("debug:outputdb");
+            Utils.Debug("Done\n");
+
         }
         static string ReadConfigString(string key)
         {
-            try { return root[key]; }
-            catch
+            if (config.ContainsKey(key))
             {
-                Console.WriteLine($"Couldn't read key {key}, setting empty string");
-                return "";
+                Utils.Debug($"{key}: {config[key]}");
+                return config[key];
             }
+            Console.WriteLine($"Couldn't read key {key}, setting empty string");
+            return "";
         }
         static bool ReadConfigBoolean(string key)
         {
-            try { return bool.Parse(root[key]); }
-            catch
+            if (config.ContainsKey(key))
             {
-                Console.WriteLine($"Couldn't read key {key}, or unable to parse as boolean, setting false");
-                return false;
+                bool value;
+                if (bool.TryParse(config[key], out value))
+                {
+                    Utils.Debug($"{key}: {value}");
+                    return value;
+                }
             }
+            Console.WriteLine($"Couldn't read key {key}, or unable to parse as boolean, setting false");
+            return false;
         }
         public static string GetTsvHeader()
         {
