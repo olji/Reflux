@@ -1,7 +1,8 @@
-﻿P2D:J:B:A:2021030300
-songList = 0x141D4B1A0
-playData = 0x1414383D4
-judgeData = 0x1415E73AC
-playSettings = 0x141438160
-unlockdata = 0x1415E9E70
-notesprogress = 0x1404AF240
+P2D:J:B:A:2021040700
+songList = 0x141D4D1B0
+playData = 0x14143A3D4
+judgeData = 0x1415E93BC
+playSettings = 0x14143A160
+unlockdata = 0x1415EBE80
+notesprogress = 0x1404B1240
+currentsong = 0x1415E94F8
