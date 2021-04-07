@@ -12,6 +12,7 @@ namespace infinitas_statfetcher
         public static long PlaySettings { get; private set; }
         public static long UnlockData { get; private set; }
         public static long NotesProgress { get; private set; }
+        public static long CurrentSong { get; private set; }
 
         public static void LoadOffsets(string filename)
         {
@@ -37,6 +38,7 @@ namespace infinitas_statfetcher
                     case "unlockdata": UnlockData = offset; break;
                     case "playsettings": PlaySettings = offset; break;
                     case "notesprogress": NotesProgress = offset; break;
+                    case "currentsong": CurrentSong = offset; break;
                 }
             }
             Utils.Debug("Offsets loaded:");
@@ -46,6 +48,7 @@ namespace infinitas_statfetcher
             Utils.Debug($"Judgeinfo: {JudgeData:X}");
             Utils.Debug($"Playsettings: {PlaySettings:X}");
             Utils.Debug($"Notesprogress: {NotesProgress:X}");
+            Utils.Debug($"CurrentSong: {CurrentSong:X}");
         }
     }
 }

@@ -49,17 +49,33 @@ namespace infinitas_statfetcher
                 knownEncodingIssues.Add(pair[0], pair[1]);
             }
         }
-        public static GameState FetchGameState()
+        public static GameState FetchGameState(GameState currentState)
         {
             short word = 4;
 
             var marker = ReadInt32(Offsets.JudgeData, word * 24, word);
-
-            if (marker == 0)
+            if (marker != 0)
             {
-                return GameState.finished;
+                return GameState.playing;
             }
-            return GameState.started;
+
+            /* Cannot go from song select to result screen anyway */
+            if(currentState == GameState.songSelect) { return currentState; }
+            marker = ReadInt32(Offsets.PlaySettings - word * 5, 0, word);
+            if (marker == 1)
+            {
+                return GameState.songSelect;
+            }
+            return GameState.resultScreen;
+        }
+        public static string FetchCurrentChart()
+        {
+            byte[] buffer = new byte[32];
+            int nRead = 0;
+            ReadProcessMemory((int)handle, Offsets.CurrentSong, buffer, buffer.Length, ref nRead);
+            int songid = BytesToInt32(buffer, 0, 32);
+            string song = songDb[songid.ToString("D5")].title_english;
+            return $"{song}";
         }
         public static bool SongListAvailable()
         {
@@ -365,7 +381,7 @@ namespace infinitas_statfetcher
                 try
                 {
                     sb.AppendLine(Utils.SongToUnlockEntry(songDb[song.Key].title, song.Value));
-                    db.AppendLine($"{song.Key},{song.Value.unlocks}");
+                    db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
                 } catch
                 {
                 }

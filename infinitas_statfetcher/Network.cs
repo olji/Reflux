@@ -39,18 +39,33 @@ namespace infinitas_statfetcher
             Offsets.LoadOffsets("offsets.txt");
             return true;
         }
-        public static async void ReportUnlocks(Dictionary<string, UnlockData> unlocks)
+        public static async void UpdateChartUnlockType(SongInfo song)
         {
-            foreach (var keyval in unlocks)
-            {
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+                {
+                    { "songid", song.ID },
+                    { "unlockType", song.type.ToString() },
+                }
+            );
+            var response = await client.PostAsync(Config.Server + "/api/updatesong", content);
+            Utils.Debug(await response.Content.ReadAsStringAsync());
+        }
+        public static async void ReportUnlock(string songid, UnlockData unlocks)
+        {
                 var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
-                    { "songid", keyval.Key },
-                    { "state", keyval.Value.unlocks.ToString()}
+                    { "songid", songid },
+                    { "state", unlocks.unlocks.ToString()}
                 }
                 );
                 var response = await client.PostAsync(Config.Server + "/api/unlocksong", content);
                 Utils.Debug(await response.Content.ReadAsStringAsync());
+        }
+        public static async void ReportUnlocks(Dictionary<string, UnlockData> unlocks)
+        {
+            foreach (var keyval in unlocks)
+            {
+                ReportUnlock(keyval.Key, keyval.Value);
             }
         }
         public static void UpdateEncodingFixes()

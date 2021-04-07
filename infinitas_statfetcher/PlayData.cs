@@ -28,6 +28,8 @@ namespace infinitas_statfetcher
         string songID, grade, clearLamp;
         public bool DataAvailable { get { return settings.DataAvailable; } }
         public bool PrematureEnd { get { return judges.prematureEnd; } }
+        public string ClearState { get { return clearLamp; } }
+        public int JudgedNotes { get { return judges.notesJudged; } }
 
         public PlayData()
         {

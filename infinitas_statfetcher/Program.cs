@@ -25,14 +25,14 @@ namespace infinitas_statfetcher
             Process process = null;
             Config.Parse("config.ini");
 
-            Dictionary<string, int> unlock_db = new Dictionary<string, int>();
+            Dictionary<string, Tuple<int, int>> unlock_db = new Dictionary<string, Tuple<int, int>>();
             bool init = false;
             try
             {
                 foreach (var line in File.ReadAllLines("unlockdb"))
                 {
                     var s = line.Split(',');
-                    unlock_db.Add(s[0], int.Parse(s[1]));
+                    unlock_db.Add(s[0], new Tuple<int, int>(int.Parse(s[1]), int.Parse(s[2])));
                 }
             } catch (FileNotFoundException e)
             {
@@ -113,69 +113,90 @@ namespace infinitas_statfetcher
             }
             Utils.LoadEncodingFixes();
 
-            if (correctVersion)
+            if (!correctVersion)
             {
-                bool songlistFetched = false;
-                while (!songlistFetched)
-                {
-                    while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
-                    Thread.Sleep(1000); /* Extra sleep just to avoid potentially undiscovered race conditions */
-                    Utils.FetchSongDataBase();
-                    if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
-                    {
-                        Utils.Debug("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
-                        Thread.Sleep(5000);
-                    }
-                    else
-                    {
-                        songlistFetched = true;
-                    }
-                }
-                File.Create(sessionFile.FullName).Close();
-                WriteLine(sessionFile, Config.GetTsvHeader());
+                Console.WriteLine("Application will now exit");
+                Console.ReadLine();
+                return;
+            }
 
-                /* Primarily for debugging and checking for encoding issues */
-                if (Config.Output_songlist)
+            bool songlistFetched = false;
+            while (!songlistFetched)
+            {
+                while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
+                Thread.Sleep(1000); /* Extra sleep just to avoid potentially undiscovered race conditions */
+                Utils.FetchSongDataBase();
+                if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
                 {
-                    List<string> p = new List<string>() { "id\ttitle\ttitle2\tartist\tgenre" };
-                    foreach (var v in Utils.songDb)
-                    {
-                        p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
-                    }
-                    File.WriteAllLines("songs.tsv", p.ToArray());
+                    Utils.Debug("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
+                    Thread.Sleep(5000);
                 }
+                else
+                {
+                    songlistFetched = true;
+                }
+            }
+            File.Create(sessionFile.FullName).Close();
+            WriteLine(sessionFile, Config.GetTsvHeader());
+
+            /* Primarily for debugging and checking for encoding issues */
+            if (Config.Output_songlist)
+            {
+                List<string> p = new List<string>() { "id\ttitle\ttitle2\tartist\tgenre" };
+                foreach (var v in Utils.songDb)
+                {
+                    p.Add($"{v.Key}\t{v.Value.title}\t{v.Value.title_english}\t{v.Value.artist}\t{v.Value.genre}");
+                }
+                File.WriteAllLines("songs.tsv", p.ToArray());
             }
 
             Utils.GetUnlockStates();
             /* Check for new songs */
-            foreach (var song in Utils.songDb)
+            if (Config.Save_remote && !init)
             {
-                if (!unlock_db.ContainsKey(song.Key) || init)
+                foreach (var song in Utils.songDb)
                 {
-                    Network.UploadSongInfo(song.Key);
+                    if (!unlock_db.ContainsKey(song.Key) || init)
+                    {
+                        Network.UploadSongInfo(song.Key);
+                    }
+                    if (unlock_db[song.Key].Item1 != (int)Utils.unlockDb[song.Key].type)
+                    {
+                        Network.UpdateChartUnlockType(song.Value);
+                    }
+                    if (unlock_db[song.Key].Item2 != Utils.unlockDb[song.Key].unlocks)
+                    {
+                        Network.ReportUnlock(song.Key, Utils.unlockDb[song.Key]);
+                        Thread.Sleep(40);
+                    }
+                    Thread.Sleep(10);
                 }
             }
 
-            
-            GameState state = GameState.finished;
+
+            GameState state = GameState.songSelect;
 
             Console.WriteLine("Initialized and ready");
 
+            string chart = "";
+            Utils.Debug("Updating marquee.txt");
+            File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
             /* Main loop */
             while (!process.HasExited)
             {
-                if (correctVersion)
+                var newstate = Utils.FetchGameState(state);
+                Utils.Debug(newstate.ToString());
+                if (newstate != state)
                 {
-                    var newstate = Utils.FetchGameState();
-                    if (newstate != state)
+                    Console.Clear();
+                    Console.WriteLine($"STATUS:{(newstate != GameState.playing ? " NOT" : "")} PLAYING");
+                    if (newstate == GameState.resultScreen)
                     {
-                        Console.Clear();
-                        Console.WriteLine($"STATUS:{(newstate == GameState.finished ? " NOT" : "")} PLAYING");
-                        if (newstate == GameState.finished)
+                        Thread.Sleep(1000); /* Sleep to avoid race condition */
+                        var latestData = new PlayData();
+                        latestData.Fetch();
+                        if (latestData.JudgedNotes != 0)
                         {
-                            Thread.Sleep(1000); /* Sleep to avoid race condition */
-                            var latestData = new PlayData();
-                            latestData.Fetch();
                             if (Config.Save_remote)
                             {
                                 Network.SendPlayData(latestData);
@@ -186,26 +207,63 @@ namespace infinitas_statfetcher
                             }
                             Print_PlayData(latestData);
                         }
-                    }
-                    state = newstate;
-
-                    if(state == GameState.finished)
-                    {
-                        var newUnlocks = Utils.UpdateUnlockStates();
-                        Utils.SaveUnlockStates("unlocks.tsv");
-                        if(newUnlocks.Count > 0)
+                        if (Config.Stream_Playstate)
                         {
-                            Network.ReportUnlocks(newUnlocks);
+                            Utils.Debug("Writing menu state to playstate.txt");
+                            File.WriteAllText("playstate.txt", "menu");
+                        }
+                        if (Config.Stream_Marquee)
+                        {
+                            Utils.Debug("Updating marquee.txt");
+                            var clearstatus = latestData.ClearState == "F" ? "FAIL!" : "CLEAR!";
+                            File.WriteAllText("marquee.txt", $"{chart} {clearstatus}");
                         }
                     }
+                    else if (newstate == GameState.songSelect && Config.Stream_Marquee)
+                    {
+                        Utils.Debug("Updating marquee.txt");
+                        File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
+                    }
+                    else
+                    {
+                        if (Config.Stream_Playstate)
+                        {
+                            Utils.Debug("Writing play state to playstate.txt");
+                            File.WriteAllText("playstate.txt", "play");
+                        }
+                        if (Config.Stream_Marquee)
+                        {
+                            chart = Utils.FetchCurrentChart();
+                            Utils.Debug($"Writing {chart} to marquee.txt");
+                            File.WriteAllText("marquee.txt", chart.ToUpper());
+                        }
+                    }
+                }
+                state = newstate;
 
-                    Thread.Sleep(2000);
-                }
-                else
+                if (state == GameState.songSelect)
                 {
+                    var newUnlocks = Utils.UpdateUnlockStates();
+                    Utils.SaveUnlockStates("unlocks.tsv");
+                    if (newUnlocks.Count > 0)
+                    {
+                        Network.ReportUnlocks(newUnlocks);
+                    }
                 }
+
+                Thread.Sleep(2000);
             }
             Utils.SaveUnlockStates("unlocks.tsv");
+            if (Config.Stream_Playstate)
+            {
+                Utils.Debug("Writing menu state to playstate.txt");
+                File.WriteAllText("playstate.txt", "off");
+            }
+            if (Config.Stream_Marquee)
+            {
+                Utils.Debug($"Writing NO SIGNAL to marquee.txt");
+                File.WriteAllText("marquee.txt", "NO SIGNAL");
+            }
         }
 
         static void Print_PlayData(PlayData latestData)
@@ -234,7 +292,7 @@ namespace infinitas_statfetcher
     }
 
     #region Custom objects
-    enum GameState { started = 0, finished };
+    enum GameState { playing = 0, resultScreen, songSelect };
     public enum PlayType { P1 = 0, P2, DP }
     #endregion
 }

@@ -15,6 +15,9 @@ namespace infinitas_statfetcher
         public static bool Output_songlist { get; private set; }
         public static bool Save_remote { get; private set; }
         public static bool Save_local { get; private set; }
+        public static bool Stream_Playstate { get; private set; }
+        public static bool Stream_Marquee { get; private set; }
+        public static string MarqueeIdleText { get; private set; }
         public static HeaderValues HeaderConfig { get { return header; } }
         static HeaderValues header;
         static IDictionary<string, string> config;
@@ -42,6 +45,10 @@ namespace infinitas_statfetcher
             header.resultDetails = ReadConfigBoolean("localrecord:resultdetails");
             header.judge = ReadConfigBoolean("localrecord:judge");
             header.settings = ReadConfigBoolean("localrecord:settings");
+
+            Stream_Playstate = ReadConfigBoolean("livestream:showplaystate");
+            Stream_Marquee = ReadConfigBoolean("livestream:enablemarquee");
+            MarqueeIdleText = ReadConfigString("livestream:marqueeidletext");
 
             Output_songlist = ReadConfigBoolean("debug:outputdb");
             Utils.Debug("Done\n");
