@@ -181,6 +181,11 @@ namespace infinitas_statfetcher
             string chart = "";
             Utils.Debug("Updating marquee.txt");
             File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
+            if (Config.Stream_Playstate)
+            {
+                Utils.Debug("Writing initial menu state to playstate.txt");
+                File.WriteAllText("playstate.txt", "menu");
+            }
             /* Main loop */
             while (!process.HasExited)
             {
