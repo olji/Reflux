@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace infinitas_statfetcher
 {
@@ -156,6 +157,29 @@ namespace infinitas_statfetcher
             };
 
         }
+        public JObject GetJsonEntry()
+        {
+            JObject json = new JObject();
+            json["score"] = ex;
+            json["lamp"] = expandLamp(clearLamp);
+            json["matchType"] = "songID";
+            json["identifier"] = songID;
+            json["playtype"] = chart.difficulty.Substring(0, 2);
+            json["difficulty"] = chart.difficulty.Substring(2, 1);
+            json["timeAchieved"] = new DateTimeOffset(timestamp).ToUnixTimeSeconds();
+            json["hitData"] = new JObject();
+            json["hitData"]["pgreat"] = judges.pgreat;
+            json["hitData"]["great"] = judges.great;
+            json["hitData"]["good"] = judges.good;
+            json["hitData"]["bad"] = judges.bad;
+            json["hitData"]["poor"] = judges.poor;
+            json["hitMeta"] = new JObject();
+            json["hitMeta"]["fast"] = judges.fast;
+            json["hitMeta"]["slow"] = judges.slow;
+            json["hitMeta"]["comboBreak"] = judges.combobreak;
+            json["hitMeta"]["gauge"] = gauge;
+            return json;
+        }
         public string GetTsvEntry()
         {
             StringBuilder sb = new StringBuilder($"{chart.title}\t{chart.difficulty}");
@@ -182,6 +206,21 @@ namespace infinitas_statfetcher
             }
             sb.Append($"\t{timestamp}");
             return sb.ToString();
+        }
+        string expandLamp(string lamp)
+        {
+            switch (lamp)
+            {
+                case "NP": return "NO PLAY";
+                case "F": return "FAILED";
+                case "AC": return "ASSIST CLEAR";
+                case "EC": return "EASY CLEAR";
+                case "NC": return "CLEAR";
+                case "HC": return "HARD CLEAR";
+                case "EX": return "EX HARD CLEAR";
+                case "FC": return "FULL COMBO";
+            }
+            return "NO PLAY";
         }
     }
 }
