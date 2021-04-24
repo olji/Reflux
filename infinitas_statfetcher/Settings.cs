@@ -11,7 +11,6 @@
         public bool battle;
         public bool Hran;
 
-        public bool DataAvailable { get { return !(Hran || battle); } }
         public void Fetch(long position, PlayType playstyle)
         {
             int word = 4;
@@ -50,6 +49,8 @@
                 case 2: style = "R-RANDOM"; break;
                 case 3: style = "S-RANDOM"; break;
                 case 4: style = "MIRROR"; break;
+                case 5: style = "SYNCHRONIZE RANDOM"; break;
+                case 6: style = "SYMMETRY RANDOM"; break;
             }
             switch (style2Val)
             {
@@ -58,12 +59,14 @@
                 case 2: style2 = "R-RANDOM"; break;
                 case 3: style2 = "S-RANDOM"; break;
                 case 4: style2 = "MIRROR"; break;
+                case 5: style2 = "SYNCHRONIZE RANDOM"; break;
+                case 6: style2 = "SYMMETRY RANDOM"; break;
             }
 
             switch (gaugeVal)
             {
                 case 0: gauge = "OFF"; break;
-                case 1: gauge = "ASSISTED EASY"; break;
+                case 1: gauge = "ASSIST EASY"; break;
                 case 2: gauge = "EASY"; break;
                 case 3: gauge = "HARD"; break;
                 case 4: gauge = "EX HARD"; break;

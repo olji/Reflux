@@ -5,6 +5,9 @@ using System.Text;
 using System.Net.Http;
 using System.IO;
 using System.Web;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 namespace infinitas_statfetcher
 {
@@ -144,6 +147,47 @@ namespace infinitas_statfetcher
                 AddChart(chart);
 
             }
+        }
+        public static async Task<int?> Kamai_GetSongID(string marqueeTitle)
+        {
+            var search = marqueeTitle;
+            var client = new HttpClient();
+            var builder = new UriBuilder("https://api.kamaitachi.xyz/v1/games/iidx/songs/search");
+            bool songFound = false, giveup = false;
+            int included_sections = 0;
+            int? songID = null;
+            do
+            {
+                builder.Query = $"title={search}";
+                var response = await client.GetStringAsync(builder.Uri);
+                JObject json = JsonConvert.DeserializeObject<JObject>(response);
+                if (json["description"].ToString().Contains("Found 1"))
+                {
+                    songFound = true;
+                    songID = (int)json["body"][0]["id"];
+                }
+                else if (json["description"].ToString().Contains("Found 0"))
+                {
+                    if(search != marqueeTitle)
+                    {
+                        giveup = true;
+                    }
+                    search = marqueeTitle.Split(' ')[0];
+                    included_sections = 1;
+                }
+                else
+                {
+                    try
+                    {
+                        search += " " + marqueeTitle.Split(' ')[included_sections];
+                        included_sections++;
+                    } catch
+                    {
+                        giveup = true;
+                    }
+                }
+            } while (!songFound && !giveup);
+            return songID;
         }
     }
 }

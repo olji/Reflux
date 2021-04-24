@@ -68,14 +68,24 @@ namespace infinitas_statfetcher
             }
             return GameState.resultScreen;
         }
-        public static string FetchCurrentChart()
+        public static string CurrentChart(bool includeDiff = false)
+        {
+            var values = FetchCurrentChart();
+            return $"{songDb[values.id].title_english}{(includeDiff ? " "+IntToDiff(values.diff) : "")}";
+        }
+        public struct currentChartData
+        {
+            public string id;
+            public int diff;
+        }
+        public static currentChartData FetchCurrentChart()
         {
             byte[] buffer = new byte[32];
             int nRead = 0;
             ReadProcessMemory((int)handle, Offsets.CurrentSong, buffer, buffer.Length, ref nRead);
-            int songid = BytesToInt32(buffer, 0, 32);
-            string song = songDb[songid.ToString("D5")].title_english;
-            return $"{song}";
+            int songid = BytesToInt32(buffer, 0, 4);
+            int diff = BytesToInt32(buffer, 4, 4);
+            return new currentChartData() { id = songid.ToString("D5"), diff = diff };
         }
         public static bool SongListAvailable()
         {

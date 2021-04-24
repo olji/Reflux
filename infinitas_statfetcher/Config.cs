@@ -91,7 +91,7 @@ namespace infinitas_statfetcher
             {
                 sb.Append("\tnotecount\tlevel");
             }
-            sb.Append("\tplaytype\tgrade\tlamp");
+            sb.Append("\tplaytype\tgrade\tlamp\tmisscount");
             if (HeaderConfig.resultDetails)
             {
                 sb.Append("\tgaugepercent\texscore");

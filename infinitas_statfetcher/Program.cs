@@ -144,7 +144,7 @@ namespace infinitas_statfetcher
             if (Config.Save_json)
             {
                 JObject head = new JObject();
-                head["service"] = "BATCH-MANUAL";
+                head["service"] = "Infinitas";
                 head["game"] = "iidx";
                 JObject json = new JObject();
                 json["head"] = head;
@@ -213,7 +213,7 @@ namespace infinitas_statfetcher
                         Thread.Sleep(1000); /* Sleep to avoid race condition */
                         var latestData = new PlayData();
                         latestData.Fetch();
-                        if (latestData.JudgedNotes != 0)
+                        if (latestData.JudgedNotes != 0 && latestData.DataAvailable)
                         {
                             if (Config.Save_remote)
                             {
@@ -232,8 +232,8 @@ namespace infinitas_statfetcher
                                 json["body"] = arr;
                                 File.WriteAllText(jsonfile.FullName, json.ToString());
                             }
-                            Print_PlayData(latestData);
                         }
+                        Print_PlayData(latestData);
                         if (Config.Stream_Playstate)
                         {
                             Utils.Debug("Writing menu state to playstate.txt");
@@ -260,7 +260,7 @@ namespace infinitas_statfetcher
                         }
                         if (Config.Stream_Marquee)
                         {
-                            chart = Utils.FetchCurrentChart();
+                            chart = Utils.CurrentChart();
                             Utils.Debug($"Writing {chart} to marquee.txt");
                             File.WriteAllText("marquee.txt", chart.ToUpper());
                         }
