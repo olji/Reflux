@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace infinitas_statfetcher
 {
@@ -53,6 +55,7 @@ namespace infinitas_statfetcher
             DateTimeFormatInfo dtformat = culture.DateTimeFormat;
             dtformat.TimeSeparator = "_";
             var sessionFile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.tsv"));
+            var jsonfile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.json"));
 
             Console.WriteLine("Trying to hook to INFINITAS...");
             do
@@ -138,6 +141,16 @@ namespace infinitas_statfetcher
             }
             File.Create(sessionFile.FullName).Close();
             WriteLine(sessionFile, Config.GetTsvHeader());
+            if (Config.Save_json)
+            {
+                JObject head = new JObject();
+                head["service"] = "Infinitas";
+                head["game"] = "iidx";
+                JObject json = new JObject();
+                json["head"] = head;
+                json["body"] = new JArray();
+                File.WriteAllText(jsonfile.FullName, json.ToString());
+            }
 
             /* Primarily for debugging and checking for encoding issues */
             if (Config.Output_songlist)
@@ -200,7 +213,7 @@ namespace infinitas_statfetcher
                         Thread.Sleep(1000); /* Sleep to avoid race condition */
                         var latestData = new PlayData();
                         latestData.Fetch();
-                        if (latestData.JudgedNotes != 0)
+                        if (latestData.JudgedNotes != 0 && latestData.DataAvailable)
                         {
                             if (Config.Save_remote)
                             {
@@ -210,8 +223,17 @@ namespace infinitas_statfetcher
                             {
                                 WriteLine(sessionFile, latestData.GetTsvEntry());
                             }
-                            Print_PlayData(latestData);
+                            if (Config.Save_json)
+                            {
+                                var entry = latestData.GetJsonEntry();
+                                var json = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(jsonfile.FullName));
+                                JArray arr = (JArray)json["body"];
+                                arr.Add(entry);
+                                json["body"] = arr;
+                                File.WriteAllText(jsonfile.FullName, json.ToString());
+                            }
                         }
+                        Print_PlayData(latestData);
                         if (Config.Stream_Playstate)
                         {
                             Utils.Debug("Writing menu state to playstate.txt");
@@ -238,7 +260,7 @@ namespace infinitas_statfetcher
                         }
                         if (Config.Stream_Marquee)
                         {
-                            chart = Utils.FetchCurrentChart();
+                            chart = Utils.CurrentChart();
                             Utils.Debug($"Writing {chart} to marquee.txt");
                             File.WriteAllText("marquee.txt", chart.ToUpper());
                         }

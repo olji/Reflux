@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace infinitas_statfetcher
 {
@@ -26,10 +27,11 @@ namespace infinitas_statfetcher
         int gauge;
         int ex;
         string songID, grade, clearLamp;
-        public bool DataAvailable { get { return settings.DataAvailable; } }
+        public bool DataAvailable { get; private set; }
         public bool PrematureEnd { get { return judges.prematureEnd; } }
         public string ClearState { get { return clearLamp; } }
         public int JudgedNotes { get { return judges.notesJudged; } }
+        public bool MissCountValid { get { return (DataAvailable && !PrematureEnd && settings.assist == "OFF"); } }
 
         public PlayData()
         {
@@ -42,23 +44,34 @@ namespace infinitas_statfetcher
             judges.Fetch(Offsets.JudgeData, Offsets.NotesProgress);
             settings.Fetch(Offsets.PlaySettings, judges.playtype);
 
-            if (!settings.DataAvailable)
-            {
-                Console.WriteLine($"Eww, {(settings.Hran ? "H-RAN" : "Battle")}");
-            }
-
             timestamp = DateTime.UtcNow;
 
             short word = 4;
 
-            var song = Utils.ReadInt32(Offsets.PlayData, 0, word);
-            var diffVal = Utils.ReadInt32(Offsets.PlayData, word, word);
-            var lamp = Utils.ReadInt32(Offsets.PlayData, word * 6, word);
-            gauge = Utils.ReadInt32(Offsets.PlayData, word * 8, word);
+            int diffVal = 0;
+            try
+            {
+                var song = Utils.ReadInt32(Offsets.PlayData, 0, word);
+                diffVal = Utils.ReadInt32(Offsets.PlayData, word, word);
+                var lamp = Utils.ReadInt32(Offsets.PlayData, word * 6, word);
+                gauge = Utils.ReadInt32(Offsets.PlayData, word * 8, word);
 
-            songID = song.ToString("00000");
+                songID = song.ToString("00000");
+                clearLamp = Utils.IntToLamp(lamp);
+                chart = FetchChartInfo(Utils.songDb[songID], diffVal);
+                DataAvailable = true;
+            }
+            catch
+            {
+                Console.WriteLine("Unable to fetch play data, using currentplaying value instead");
+                var currentChart = Utils.FetchCurrentChart();
+                songID = currentChart.id;
+                diffVal = currentChart.diff;
+                clearLamp = "NA"; /* What clear lamp should be given on stuff not sent to server? */
+                chart = FetchChartInfo(Utils.songDb[songID], diffVal);
+                DataAvailable = false;
+            }
 
-            chart = FetchChartInfo(Utils.songDb[songID], diffVal);
 
 
             var maxEx = Utils.songDb[songID].totalNotes[diffVal] * 2;
@@ -100,7 +113,6 @@ namespace infinitas_statfetcher
                 grade = "F";
             }
 
-            clearLamp = Utils.IntToLamp(lamp);
         }
         ChartInfo FetchChartInfo(SongInfo song, int diffVal)
         {
@@ -156,6 +168,44 @@ namespace infinitas_statfetcher
             };
 
         }
+        public JObject GetJsonEntry()
+        {
+            var kamaiTask = Network.Kamai_GetSongID(chart.title_english);
+            kamaiTask.Wait();
+            var kamaiID = kamaiTask.Result;
+            JObject json = new JObject();
+            json["score"] = ex;
+            json["lamp"] = expandLamp(clearLamp);
+            if (kamaiID == null)
+            {
+                json["matchType"] = "title";
+                json["identifier"] = chart.title;
+            }
+            else
+            {
+                json["matchType"] = "songID";
+                json["identifier"] = kamaiID;
+            }
+            json["playtype"] = chart.difficulty.Substring(0, 2);
+            json["difficulty"] = expandDifficulty(chart.difficulty.Substring(2, 1));
+            json["timeAchieved"] = new DateTimeOffset(timestamp).ToUnixTimeMilliseconds();
+            json["hitData"] = new JObject();
+            json["hitData"]["pgreat"] = judges.pgreat;
+            json["hitData"]["great"] = judges.great;
+            json["hitData"]["good"] = judges.good;
+            json["hitData"]["bad"] = judges.bad;
+            json["hitData"]["poor"] = judges.poor;
+            json["hitMeta"] = new JObject();
+            json["hitMeta"]["fast"] = judges.fast;
+            json["hitMeta"]["slow"] = judges.slow;
+            json["hitMeta"]["comboBreak"] = judges.combobreak;
+            json["hitMeta"]["gauge"] = gauge;
+            if (MissCountValid)
+            {
+                json["hitMeta"]["bp"] = judges.bad + judges.poor;
+            }
+            return json;
+        }
         public string GetTsvEntry()
         {
             StringBuilder sb = new StringBuilder($"{chart.title}\t{chart.difficulty}");
@@ -167,7 +217,7 @@ namespace infinitas_statfetcher
             {
                 sb.Append($"\t{chart.totalNotes}\t{chart.level}");
             }
-            sb.Append($"\t{judges.playtype}\t{grade}\t{clearLamp}");
+            sb.Append($"\t{judges.playtype}\t{grade}\t{clearLamp}\t{(MissCountValid ? (judges.poor+judges.bad).ToString() : "-")}");
             if (Config.HeaderConfig.resultDetails)
             {
                 sb.Append($"\t{gauge}\t{ex}");
@@ -182,6 +232,33 @@ namespace infinitas_statfetcher
             }
             sb.Append($"\t{timestamp}");
             return sb.ToString();
+        }
+        string expandDifficulty(string diff)
+        {
+            switch (diff)
+            {
+                case "B": return "BEGINNER";
+                case "N": return "NORMAL";
+                case "H": return "HYPER";
+                case "A": return "ANOTHER";
+                case "L": return "LEGGENDARIA";
+            }
+            throw new Exception($"Unexpected difficulty character {diff}");
+        }
+        string expandLamp(string lamp)
+        {
+            switch (lamp)
+            {
+                case "NP": return "NO PLAY";
+                case "F": return "FAILED";
+                case "AC": return "ASSIST CLEAR";
+                case "EC": return "EASY CLEAR";
+                case "NC": return "CLEAR";
+                case "HC": return "HARD CLEAR";
+                case "EX": return "EX HARD CLEAR";
+                case "FC": return "FULL COMBO";
+            }
+            throw new Exception($"Unexpected lamp code {lamp}");
         }
     }
 }
