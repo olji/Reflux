@@ -46,6 +46,7 @@ namespace infinitas_statfetcher
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
+                    { "apikey", Config.API_key },
                     { "songid", song.ID },
                     { "unlockType", song.type.ToString() },
                 }
@@ -57,6 +58,7 @@ namespace infinitas_statfetcher
         {
                 var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
+                    { "apikey", Config.API_key },
                     { "songid", songid },
                     { "state", unlocks.unlocks.ToString()}
                 }
@@ -95,6 +97,7 @@ namespace infinitas_statfetcher
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
+                    { "apikey", Config.API_key },
                     { "songid", song.ID },
                     { "unlockType", song.type.ToString() },
                     { "title", song.title},
@@ -111,6 +114,7 @@ namespace infinitas_statfetcher
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
+                    { "apikey", Config.API_key },
                     { "songid", chart.songid },
                     { "unlocked", chart.unlocked.ToString() },
                     { "diff", chart.difficulty.ToString()},
