@@ -338,6 +338,10 @@ namespace infinitas_statfetcher
                 var sData = buf.Skip(position).Take(structSize).ToArray();
                 UnlockData data = new UnlockData { songID = BytesToInt32(sData, 0, 4), type = (unlockType)BytesToInt32(sData, 4, 4), unlocks = BytesToInt32(sData, 8, 4) };
                 string id = data.songID.ToString("D5");
+                if(id == "00000") /* Take into account where songDb is populated with unreleased songs */
+                {
+                    break;
+                }
                 unlockDb.Add(id, data);
                 try
                 {
