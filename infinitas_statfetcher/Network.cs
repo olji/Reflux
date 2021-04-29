@@ -140,15 +140,22 @@ namespace infinitas_statfetcher
                 if (i == 0 || i == 5 || song.level[i] == 0) { continue; }
 
                 Thread.Sleep(10);
-                ChartInfo chart = new ChartInfo() {
-                    level = song.level[i],
-                    songid = songid,
-                    difficulty = Utils.IntToDiff(i),
-                    totalNotes = song.totalNotes[i],
-                    unlocked = Utils.GetUnlockStateForDifficulty(songid, i)
-                };
+                try
+                {
+                    ChartInfo chart = new ChartInfo()
+                    {
+                        level = song.level[i],
+                        songid = songid,
+                        difficulty = Utils.IntToDiff(i),
+                        totalNotes = song.totalNotes[i],
+                        unlocked = Utils.GetUnlockStateForDifficulty(songid, i)
+                    };
 
-                AddChart(chart);
+                    AddChart(chart);
+                } catch
+                {
+
+                }
 
             }
         }

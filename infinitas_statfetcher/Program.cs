@@ -173,14 +173,17 @@ namespace infinitas_statfetcher
                     {
                         Network.UploadSongInfo(song.Key);
                     }
-                    if (unlock_db[song.Key].Item1 != (int)Utils.unlockDb[song.Key].type)
+                    if (unlock_db.ContainsKey(song.Key))
                     {
-                        Network.UpdateChartUnlockType(song.Value);
-                    }
-                    if (unlock_db[song.Key].Item2 != Utils.unlockDb[song.Key].unlocks)
-                    {
-                        Network.ReportUnlock(song.Key, Utils.unlockDb[song.Key]);
-                        Thread.Sleep(40);
+                        if (unlock_db[song.Key].Item1 != (int)Utils.unlockDb[song.Key].type)
+                        {
+                            Network.UpdateChartUnlockType(song.Value);
+                        }
+                        if (unlock_db[song.Key].Item2 != Utils.unlockDb[song.Key].unlocks)
+                        {
+                            Network.ReportUnlock(song.Key, Utils.unlockDb[song.Key]);
+                            Thread.Sleep(40);
+                        }
                     }
                     Thread.Sleep(10);
                 }
