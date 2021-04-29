@@ -1,9 +1,17 @@
 # infinitas_statfetcher
 
-Probes memory for information for each played chart, from obvious stuff like ex score, note judging, dj level and clear to gauge percent, play settings (random/sudden+/autoscratch/gauge) and if the song played to the end or not.
+Probes memory for following information:
+Per play:
+- Settings (RAN,LIFT,Autoscratch etc.)
+- Play results (Score, lamp, DJ level)
+- Judge data (Pgreat, misses, fast/slow)
+- Metadata (Gauge percent, note progress)
 
-This stuff is then append to a .tsv session file where the data saved is configurable.
-It can also send the data to a server configurable in the config file, either run locally or remotely.
+It also dumps the database over chart unlocks.
+
+Some live streaming utilities are available as well, such as outputting current playing song and the play state tracking info to separate files for displaying on screen or automating behaviour.
+
+Play data is, depending on configuration, appended to a .tsv session file, a json file or sent to a URL running a server with the API used. (Or any combination of them)
 
 Memory offsets used to find the relevant information is stored in a file along with the build version it works with. On start the binary will probe the executable for build version by brute force and compare with what's listed in the offset file.
 If no match it will check for an applicable offset file on a configurable server.
