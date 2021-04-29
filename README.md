@@ -1,6 +1,6 @@
 # infinitas_statfetcher
 
-Probes memory for following information:
+Probes memory for following information:  
 Per play:
 - Settings (RAN,LIFT,Autoscratch etc.)
 - Play results (Score, lamp, DJ level)
