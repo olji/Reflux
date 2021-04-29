@@ -7,7 +7,7 @@ Per play:
 - Judge data (Pgreat, misses, fast/slow)
 - Metadata (Gauge percent, note progress)
 
-It also dumps the database over chart unlocks.
+It also dumps the database for chart unlocks.
 
 Some live streaming utilities are available as well, such as outputting current playing song and the play state tracking info to separate files for displaying on screen or automating behaviour.
 
