@@ -9,6 +9,18 @@ using System.Diagnostics;
 
 namespace infinitas_statfetcher
 {
+    enum DiffInt { 
+        SPB = 0,
+        SPN,
+        SPH,
+        SPA,
+        SPL,
+        DPB,
+        DPN,
+        DPH,
+        DPA,
+        DPL
+    }
     public struct SongInfo
     {
         public string ID;
@@ -20,6 +32,16 @@ namespace infinitas_statfetcher
         public unlockType type;
         public string genre;
         public string bpm;
+    }
+    public struct TrackerInfo
+    {
+        public int grade;
+        public int lamp;
+    }
+    public struct Chart
+    {
+        public string songID;
+        public int difficulty;
     }
     public enum unlockType { Base = 1, Bits, Hidden }; // Hidden being potentially hidden from you, as with subscription songs or song packs
     [StructLayout(LayoutKind.Sequential)]
@@ -38,6 +60,7 @@ namespace infinitas_statfetcher
         public static IntPtr handle;
         public static Dictionary<string, UnlockData> unlockDb = new Dictionary<string, UnlockData>();
         public static Dictionary<string, SongInfo> songDb = new Dictionary<string, SongInfo>();
+        public static Dictionary<Chart, TrackerInfo> trackerDb = new Dictionary<Chart, TrackerInfo>();
         readonly static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
 
         public static void LoadEncodingFixes()
@@ -78,6 +101,59 @@ namespace infinitas_statfetcher
             public string id;
             public int diff;
         }
+        public static void FetchSongDataBase()
+        {
+            Dictionary<string, SongInfo> result = new Dictionary<string, SongInfo>();
+            Debug("Fetching available songs");
+            var current_position = 0;
+            while (true)
+            {
+
+                var songInfo = FetchSongInfo(Offsets.SongList + current_position);
+
+                if (songInfo.title == null)
+                {
+                    Debug("Songs fetched.");
+                    break;
+                }
+
+                if (knownEncodingIssues.ContainsKey(songInfo.title))
+                {
+                    var old = songInfo.title;
+                    songInfo.title = knownEncodingIssues[songInfo.title];
+                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.title}\"");
+                }
+                if (knownEncodingIssues.ContainsKey(songInfo.artist))
+                {
+                    var old = songInfo.artist;
+                    songInfo.artist = knownEncodingIssues[songInfo.artist];
+                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.artist}\"");
+                }
+                if (!result.ContainsKey(songInfo.ID))
+                {
+                    result.Add(songInfo.ID, songInfo);
+                }
+
+                current_position += 0x3F0;
+
+            }
+            songDb = result;
+        }
+        static Int32 BytesToInt32(byte[] input, int skip, int take)
+        {
+            if (skip == 0)
+            {
+                return BitConverter.ToInt32(input.Take(take).ToArray());
+            }
+            return BitConverter.ToInt32(input.Skip(skip).Take(take).ToArray());
+        }
+        [Conditional("DEBUG")]
+        public static void Debug(string msg)
+        {
+            Console.WriteLine(msg);
+        }
+
+        #region Memory reading functions
         public static currentChartData FetchCurrentChart()
         {
             byte[] buffer = new byte[32];
@@ -172,116 +248,9 @@ namespace infinitas_statfetcher
             return song;
 
         }
-        public static void FetchSongDataBase()
-        {
-            Dictionary<string, SongInfo> result = new Dictionary<string, SongInfo>();
-            Debug("Fetching available songs");
-            var current_position = 0;
-            while (true)
-            {
+        #endregion
 
-                var songInfo = FetchSongInfo(Offsets.SongList + current_position);
-
-                if (songInfo.title == null)
-                {
-                    Debug("Songs fetched.");
-                    break;
-                }
-
-                if (knownEncodingIssues.ContainsKey(songInfo.title))
-                {
-                    var old = songInfo.title;
-                    songInfo.title = knownEncodingIssues[songInfo.title];
-                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.title}\"");
-                }
-                if (knownEncodingIssues.ContainsKey(songInfo.artist))
-                {
-                    var old = songInfo.artist;
-                    songInfo.artist = knownEncodingIssues[songInfo.artist];
-                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.artist}\"");
-                }
-                if (!result.ContainsKey(songInfo.ID))
-                {
-                    result.Add(songInfo.ID, songInfo);
-                }
-
-                current_position += 0x3F0;
-
-            }
-            songDb = result;
-        }
-        static Int32 BytesToInt32(byte[] input, int skip, int take)
-        {
-            if (skip == 0)
-            {
-                return BitConverter.ToInt32(input.Take(take).ToArray());
-            }
-            return BitConverter.ToInt32(input.Skip(skip).Take(take).ToArray());
-        }
-        public static string IntToDiff(int diff) {
-            switch (diff)
-            {
-                case 0: return "SPB";
-                case 1: return "SPN";
-                case 2: return "SPH";
-                case 3: return "SPA";
-                case 4: return "SPL";
-                case 5: return "DPB";
-                case 6: return "DPN";
-                case 7: return "DPH";
-                case 8: return "DPA";
-                case 9: return "DPL";
-                default: return "Unknown";
-            }
-        }
-        public static int DiffToInt(string diff) { 
-            switch (diff)
-            {
-                case "SPB": return 0;
-                case "SPN": return 1;
-                case "SPH": return 2;
-                case "SPA": return 3;
-                case "SPL": return 4;
-                case "DPB": return 5;
-                case "DPN": return 6;
-                case "DPH": return 7;
-                case "DPA": return 8;
-                case "DPL": return 9;
-                default: return -1;
-            }
-        }
-        public static string IntToLamp(int lamp)
-        {
-            /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
-            switch (lamp)
-            {
-                case 0: return "NP";
-                case 1: return "F"; 
-                case 2: return "AC";
-                case 3: return "EC";
-                case 4: return "NC";
-                case 5: return "HC";
-                case 6: return "EX";
-                case 7: return "FC";
-                default: return "Unknown";
-            }
-        }
-        public static int LampToInt(string lamp)
-        {
-            switch (lamp)
-            {
-                case "NP": return 0;
-                case "F": return 1;
-                case "AC": return 2;
-                case "EC": return 3;
-                case "NC": return 4;
-                case "HC": return 5;
-                case "EX": return 6;
-                case "FC": return 7;
-                default: return -1;
-            }
-        }
-
+        #region Unlock database related
         /// <summary>
         /// Update and detect changes to song unlock states
         /// </summary>
@@ -359,50 +328,6 @@ namespace infinitas_statfetcher
             return extra;
 
         }
-        static string SongToUnlockEntry(string songTitle, UnlockData song)
-        {
-            StringBuilder sb = new StringBuilder($"{songTitle}\t{song.type.ToString()}\t");
-
-            var unlockWord = new BitVector32(song.unlocks);
-            var SPB = BitVector32.CreateMask();
-            var SPN = BitVector32.CreateMask(SPB);
-            var SPH = BitVector32.CreateMask(SPN);
-            var SPA = BitVector32.CreateMask(SPH);
-            var SPL = BitVector32.CreateMask(SPA);
-            var DPB = BitVector32.CreateMask(SPL);
-            var DPN = BitVector32.CreateMask(DPB);
-            var DPH = BitVector32.CreateMask(DPN);
-            var DPA = BitVector32.CreateMask(DPH);
-            var DPL = BitVector32.CreateMask(DPA);
-
-            sb.Append($"{unlockWord[SPN]}\t");
-            sb.Append($"{unlockWord[SPH]}\t");
-            sb.Append($"{unlockWord[SPA]}\t");
-            sb.Append($"{unlockWord[DPN]}\t");
-            sb.Append($"{unlockWord[DPH]}\t");
-            sb.Append($"{unlockWord[DPA]}");
-
-            return sb.ToString();
-        }
-        public static void SaveUnlockStates(string filename)
-        {
-
-            StringBuilder sb = new StringBuilder();
-            StringBuilder db = new StringBuilder();
-            sb.AppendLine("title\tType\tSPN\tSPH\tSPA\tDPN\tDPH\tDPA");
-            foreach(var song in unlockDb)
-            {
-                try
-                {
-                    sb.AppendLine(Utils.SongToUnlockEntry(songDb[song.Key].title, song.Value));
-                    db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
-                } catch
-                {
-                }
-            }
-            File.WriteAllText(filename, sb.ToString());
-            File.WriteAllText("unlockdb", db.ToString());
-        }
         public static bool GetUnlockStateForDifficulty(string songid, int diff)
         {
             var unlockBits = unlockDb[songid].unlocks;
@@ -413,10 +338,194 @@ namespace infinitas_statfetcher
         {
             return GetUnlockStateForDifficulty(songid, DiffToInt(diff));
         }
-        [Conditional("DEBUG")]
-        public static void Debug(string msg)
+        #endregion
+
+        #region Tracker related
+        static IEnumerable<string> GetTrackerEntries()
         {
-            Console.WriteLine(msg);
+            foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
+            {
+                var song = unlockDb[songid];
+                StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t{song.type.ToString()}\t");
+
+                for(int i = 0; i < 10; i++)
+                {
+                    /* Skip beginner and leggendaria */
+                    if(i == (int)DiffInt.SPB || i == (int)DiffInt.SPL || i == (int)DiffInt.DPB || i == (int)DiffInt.DPL) { continue; }
+                    Chart chart = new Chart() { songID = songid, difficulty = i };
+                    if (!trackerDb.ContainsKey(chart))
+                    {
+                        sb.Append("\t\t\t\t");
+                    }
+                    else
+                    {
+                        bool unlockState = GetUnlockStateForDifficulty(songid, chart.difficulty);
+                        sb.Append($"{(unlockState ? "TRUE" : "FALSE")}\t");
+                        sb.Append($"{songDb[songid].level[chart.difficulty]}\t");
+                        sb.Append($"{Utils.IntToLamp(trackerDb[chart].lamp)}\t");
+                        sb.Append($"{Utils.IntToGrade(trackerDb[chart].grade)}\t");
+                    }
+                }
+
+                yield return sb.ToString();
+            }
         }
+        public static void SaveTrackerData(string filename)
+        {
+
+            StringBuilder sb = new StringBuilder();
+            StringBuilder db = new StringBuilder();
+            sb.AppendLine("title\tType\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter");
+            foreach (var entry in Utils.GetTrackerEntries())
+            {
+                sb.AppendLine(entry);
+            }
+            File.WriteAllText(filename, sb.ToString());
+            if (Config.Save_remote)
+            {
+                foreach (var song in unlockDb)
+                {
+                    db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
+                }
+                File.WriteAllText("unlockdb", db.ToString());
+            }
+        }
+        public static void LoadTracker()
+        {
+            /* Initialize if tracker file don't exist */
+            if (File.Exists("tracker.db"))
+            {
+                foreach (var line in File.ReadAllLines("tracker.db"))
+                {
+                    var segments = line.Split(',');
+                    trackerDb.Add(new Chart() { songID = segments[0], difficulty = int.Parse(segments[1]) }, new TrackerInfo() { grade = int.Parse(segments[2]), lamp = int.Parse(segments[3]) });
+                }
+            } else
+            {
+                foreach(var song in songDb)
+                {
+                    for(int i = 0; i < song.Value.level.Length; i++)
+                    {
+                        /* Skip beginner difficulties */
+                        if(i == (int)DiffInt.SPB || i == (int)DiffInt.DPB) { continue; }
+                        /* Skip charts with no difficulty rating */
+                        if(song.Value.level[i] == 0) { continue; }
+
+                        trackerDb.Add(new Chart() { songID = song.Key, difficulty = i }, new TrackerInfo() { grade = 0, lamp = 0 });
+                        SaveTracker();
+                    }
+                }
+            }
+        }
+        public static void SaveTracker()
+        {
+            List<string> entries = new List<string>();
+            foreach (var entry in trackerDb)
+            {
+                entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp}");
+            }
+            Debug("Saving tracker.db");
+            File.WriteAllLines("tracker.db", entries.ToArray());
+        }
+        #endregion
+
+        #region Int to String conversion functions
+        public static string IntToDiff(int diff) {
+            switch (diff)
+            {
+                case 0: return "SPB";
+                case 1: return "SPN";
+                case 2: return "SPH";
+                case 3: return "SPA";
+                case 4: return "SPL";
+                case 5: return "DPB";
+                case 6: return "DPN";
+                case 7: return "DPH";
+                case 8: return "DPA";
+                case 9: return "DPL";
+                default: return "Unknown";
+            }
+        }
+        public static int DiffToInt(string diff) { 
+            switch (diff)
+            {
+                case "SPB": return 0;
+                case "SPN": return 1;
+                case "SPH": return 2;
+                case "SPA": return 3;
+                case "SPL": return 4;
+                case "DPB": return 5;
+                case "DPN": return 6;
+                case "DPH": return 7;
+                case "DPA": return 8;
+                case "DPL": return 9;
+                default: return -1;
+            }
+        }
+        public static string IntToLamp(int lamp)
+        {
+            /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
+            switch (lamp)
+            {
+                case 0: return "NP";
+                case 1: return "F"; 
+                case 2: return "AC";
+                case 3: return "EC";
+                case 4: return "NC";
+                case 5: return "HC";
+                case 6: return "EX";
+                case 7: return "FC";
+                default: return "Unknown";
+            }
+        }
+        public static int LampToInt(string lamp)
+        {
+            switch (lamp)
+            {
+                case "NP": return 0;
+                case "F": return 1;
+                case "AC": return 2;
+                case "EC": return 3;
+                case "NC": return 4;
+                case "HC": return 5;
+                case "EX": return 6;
+                case "FC": return 7;
+                default: return -1;
+            }
+        }
+        public static int GradeToInt(string grade)
+        {
+            switch (grade)
+            {
+                case "": return 0;
+                case "F": return 1;
+                case "E": return 2;
+                case "D": return 3;
+                case "C": return 4;
+                case "B": return 5;
+                case "A": return 6;
+                case "AA": return 7;
+                case "AAA": return 8;
+                default: return -1;
+            }
+        }
+        public static string IntToGrade(int grade)
+        {
+            switch (grade)
+            {
+                case 0: return "";
+                case 1: return "F";
+                case 2: return "E";
+                case 3: return "D";
+                case 4: return "C";
+                case 5: return "B";
+                case 6: return "A";
+                case 7: return "AA";
+                case 8: return "AAA";
+                default: return "";
+            }
+        }
+
+        #endregion
     }
 }

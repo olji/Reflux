@@ -29,31 +29,37 @@ namespace infinitas_statfetcher
 
             Dictionary<string, Tuple<int, int>> unlock_db = new Dictionary<string, Tuple<int, int>>();
             bool init = false;
-            try
+            if (Config.Save_remote)
             {
-                foreach (var line in File.ReadAllLines("unlockdb"))
+                if (File.Exists("unlockdb"))
                 {
-                    var s = line.Split(',');
-                    unlock_db.Add(s[0], new Tuple<int, int>(int.Parse(s[1]), int.Parse(s[2])));
+                    foreach (var line in File.ReadAllLines("unlockdb"))
+                    {
+                        var s = line.Split(',');
+                        unlock_db.Add(s[0], new Tuple<int, int>(int.Parse(s[1]), int.Parse(s[2])));
+                    }
                 }
-            } catch (FileNotFoundException e)
-            {
-                init = true;
-                if (Config.Save_remote)
+                else
                 {
+                    init = true;
                     Console.WriteLine("unlockdb not found, will initialize all songs on remote server");
                 }
             }
-            DirectoryInfo sessionDir = new DirectoryInfo("sessions");
-            if (!sessionDir.Exists)
-            {
-                sessionDir.Create();
-            }
+
             DateTime now = DateTime.Now;
 
             CultureInfo culture = CultureInfo.CreateSpecificCulture("en-us");
             DateTimeFormatInfo dtformat = culture.DateTimeFormat;
             dtformat.TimeSeparator = "_";
+
+            DirectoryInfo sessionDir = new DirectoryInfo("sessions");
+            if (Config.Save_local)
+            {
+                if (!sessionDir.Exists)
+                {
+                    sessionDir.Create();
+                }
+            }
             var sessionFile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.tsv"));
             var jsonfile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.json"));
 
@@ -81,6 +87,8 @@ namespace infinitas_statfetcher
             var bm2dxModule = process.MainModule;
             Offsets.LoadOffsets("offsets.txt");
 
+            /* Figure out if offset file is relevant */
+            #region Figure out if offset file is relevant
             Utils.Debug($"Baseaddr is {bm2dxModule.BaseAddress.ToString("X")}");
             byte[] buffer = new byte[80000000]; /* 80MB */
             int nRead = 0;
@@ -99,6 +107,7 @@ namespace infinitas_statfetcher
                     /* Don't break, first two versions appearing are referring to 2016-builds, actual version appears later */
                 }
             }
+
             if (foundVersion != Offsets.Version)
             {
                 if (Config.UpdateFiles)
@@ -122,6 +131,7 @@ namespace infinitas_statfetcher
                 Console.ReadLine();
                 return;
             }
+            #endregion
 
             bool songlistFetched = false;
             while (!songlistFetched)
@@ -189,6 +199,11 @@ namespace infinitas_statfetcher
                 }
             }
 
+            if (Config.Save_local)
+            {
+                Utils.LoadTracker();
+            }
+
 
             GameState state = GameState.songSelect;
 
@@ -224,6 +239,14 @@ namespace infinitas_statfetcher
                             }
                             if (Config.Save_local)
                             {
+                                /* Update best lamp/grade */
+                                Chart c = new Chart() { songID = latestData.Chart.songid, difficulty = Utils.DiffToInt(latestData.Chart.difficulty) };
+                                var entry = Utils.trackerDb[c];
+                                entry.grade = Math.Max(Utils.trackerDb[c].grade, latestData.Grade);
+                                entry.lamp = Math.Max(Utils.trackerDb[c].lamp, latestData.Lamp);
+                                Utils.trackerDb[c] = entry;
+                                Utils.SaveTracker();
+
                                 WriteLine(sessionFile, latestData.GetTsvEntry());
                             }
                             if (Config.Save_json)
@@ -274,7 +297,11 @@ namespace infinitas_statfetcher
                 if (state == GameState.songSelect)
                 {
                     var newUnlocks = Utils.UpdateUnlockStates();
-                    Utils.SaveUnlockStates("unlocks.tsv");
+                    if (Config.Save_local)
+                    {
+                        Utils.Debug("Saving tracker data tsv");
+                        Utils.SaveTrackerData("tracker.tsv");
+                    }
                     if (newUnlocks.Count > 0)
                     {
                         Network.ReportUnlocks(newUnlocks);
@@ -283,7 +310,10 @@ namespace infinitas_statfetcher
 
                 Thread.Sleep(2000);
             }
-            Utils.SaveUnlockStates("unlocks.tsv");
+            if (Config.Save_local)
+            {
+                Utils.SaveTrackerData("tracker.tsv");
+            }
             if (Config.Stream_Playstate)
             {
                 Utils.Debug("Writing menu state to playstate.txt");
@@ -314,11 +344,6 @@ namespace infinitas_statfetcher
         {
             File.AppendAllLines(file.FullName, new string[] { str });
         }
-        static void DumpStackMemory()
-        {
-
-        }
-
     }
 
     #region Custom objects

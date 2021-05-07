@@ -28,6 +28,9 @@ namespace infinitas_statfetcher
         int ex;
         string songID, grade, clearLamp;
         public bool DataAvailable { get; private set; }
+        public ChartInfo Chart { get { return chart; } }
+        public int Grade { get { return Utils.GradeToInt(grade); } }
+        public int Lamp { get { return Utils.LampToInt(clearLamp); } }
         public bool PrematureEnd { get { return judges.prematureEnd; } }
         public string ClearState { get { return clearLamp; } }
         public int JudgedNotes { get { return judges.notesJudged; } }
