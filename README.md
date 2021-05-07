@@ -1,13 +1,13 @@
 # infinitas_statfetcher
 
-Probes memory for following information:
+Probes memory for following information:  
 Per play:
 - Settings (RAN,LIFT,Autoscratch etc.)
 - Play results (Score, lamp, DJ level)
 - Judge data (Pgreat, misses, fast/slow)
 - Metadata (Gauge percent, note progress)
 
-It also dumps the database over chart unlocks.
+It also dumps the database for chart unlocks.
 
 Some live streaming utilities are available as well, such as outputting current playing song and the play state tracking info to separate files for displaying on screen or automating behaviour.
 
