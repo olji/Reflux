@@ -43,7 +43,7 @@ namespace infinitas_statfetcher
         public string songID;
         public int difficulty;
     }
-    public enum unlockType { Base = 1, Bits, Hidden }; // Hidden being potentially hidden from you, as with subscription songs or song packs
+    public enum unlockType { Base = 1, Bits, Sub }; // Hidden being potentially hidden from you, as with subscription songs or song packs
     [StructLayout(LayoutKind.Sequential)]
     public struct UnlockData
     {
@@ -348,10 +348,10 @@ namespace infinitas_statfetcher
                 var song = unlockDb[songid];
                 StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t");
 
+                StringBuilder chartData = new StringBuilder();
                 int bitCost = 0;
                 for(int i = 0; i < 10; i++)
                 {
-                    StringBuilder chartData = new StringBuilder();
                     /* Skip beginner and leggendaria */
                     if(i == (int)DiffInt.SPB || i == (int)DiffInt.SPL || i == (int)DiffInt.DPB || i == (int)DiffInt.DPL) { continue; }
                     Chart chart = new Chart() { songID = songid, difficulty = i };
@@ -366,10 +366,14 @@ namespace infinitas_statfetcher
                         chartData.Append($"{songDb[songid].level[chart.difficulty]}\t");
                         chartData.Append($"{Utils.IntToLamp(trackerDb[chart].lamp)}\t");
                         chartData.Append($"{Utils.IntToGrade(trackerDb[chart].grade)}\t");
-                        bitCost += 500 * songDb[songid].level[chart.difficulty];
+                        if (!unlockState)
+                        {
+                            bitCost += 500 * songDb[songid].level[chart.difficulty];
+                        }
                     }
                 }
                 sb.Append($"{(song.type == unlockType.Bits ? bitCost.ToString() : song.type.ToString())}\t");
+                sb.Append(chartData);
 
                 yield return sb.ToString();
             }
