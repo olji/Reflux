@@ -118,11 +118,11 @@ namespace infinitas_statfetcher
                 {
                     Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version})");
                 }
-                Network.UpdateEncodingFixes();
             } else
             {
                 correctVersion = true;
             }
+            Network.UpdateEncodingFixes();
             Utils.LoadEncodingFixes();
 
             if (!correctVersion)

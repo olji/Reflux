@@ -65,9 +65,9 @@ namespace infinitas_statfetcher
 
         public static void LoadEncodingFixes()
         {
-            /* This shouldn't be necessary, Viva!, fffff, AETHER and Sweet Sweet Magic encoded fine during early development */
             foreach (var line in File.ReadAllLines("encodingfixes.txt"))
             {
+                if (!line.Contains('\t')) { continue; } /* Skip version string */
                 var pair = line.Split('\t');
                 knownEncodingIssues.Add(pair[0], pair[1]);
             }
@@ -346,26 +346,30 @@ namespace infinitas_statfetcher
             foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
             {
                 var song = unlockDb[songid];
-                StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t{song.type.ToString()}\t");
+                StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t");
 
+                int bitCost = 0;
                 for(int i = 0; i < 10; i++)
                 {
+                    StringBuilder chartData = new StringBuilder();
                     /* Skip beginner and leggendaria */
                     if(i == (int)DiffInt.SPB || i == (int)DiffInt.SPL || i == (int)DiffInt.DPB || i == (int)DiffInt.DPL) { continue; }
                     Chart chart = new Chart() { songID = songid, difficulty = i };
                     if (!trackerDb.ContainsKey(chart))
                     {
-                        sb.Append("\t\t\t\t");
+                        chartData.Append("\t\t\t\t");
                     }
                     else
                     {
                         bool unlockState = GetUnlockStateForDifficulty(songid, chart.difficulty);
-                        sb.Append($"{(unlockState ? "TRUE" : "FALSE")}\t");
-                        sb.Append($"{songDb[songid].level[chart.difficulty]}\t");
-                        sb.Append($"{Utils.IntToLamp(trackerDb[chart].lamp)}\t");
-                        sb.Append($"{Utils.IntToGrade(trackerDb[chart].grade)}\t");
+                        chartData.Append($"{(unlockState ? "TRUE" : "FALSE")}\t");
+                        chartData.Append($"{songDb[songid].level[chart.difficulty]}\t");
+                        chartData.Append($"{Utils.IntToLamp(trackerDb[chart].lamp)}\t");
+                        chartData.Append($"{Utils.IntToGrade(trackerDb[chart].grade)}\t");
+                        bitCost += 500 * songDb[songid].level[chart.difficulty];
                     }
                 }
+                sb.Append($"{(song.type == unlockType.Bits ? bitCost.ToString() : song.type.ToString())}\t");
 
                 yield return sb.ToString();
             }

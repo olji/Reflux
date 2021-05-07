@@ -8,18 +8,49 @@ using System.Web;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
+using System.Linq;
 
 namespace infinitas_statfetcher
 {
     class Network
     {
         readonly static HttpClient client = new HttpClient();
+        static string GetLatestEncodingFix()
+        {
+            var builder = new UriBuilder(Config.UpdateServer + "/encodingfixes.txt");
+            var response = client.GetStringAsync(builder.Uri);
+            response.Wait();
+            return response.Result;
+        }
         static string GetLatestOffset()
         {
             var builder = new UriBuilder(Config.UpdateServer + "/offsets.txt");
             var response = client.GetStringAsync(builder.Uri);
             response.Wait();
             return response.Result;
+        }
+        public static void UpdateEncodingFixes()
+        {
+            string currentVersion = File.ReadLines("encodingfixes.txt").Where(line => !line.Contains('\t')).FirstOrDefault();
+            var content = GetLatestEncodingFix();
+            var netVersion = "";
+            using (var reader = new StringReader(content))
+            {
+                netVersion = reader.ReadLine().Trim();
+            }
+            DateTime current = DateTime.ParseExact(currentVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
+            DateTime net = DateTime.ParseExact(netVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
+            if (current < net)
+            {
+                Console.WriteLine("Found a more recent file for encoding fixes.");
+                if (!Directory.Exists("archive"))
+                {
+                    Directory.CreateDirectory("archive");
+                }
+                File.Move("encodingfixes.txt", $"archive/encodingfixes_{currentVersion}.txt", true);
+                File.WriteAllText("encodingfixes.txt", content);
+            }
         }
         public static bool UpdateOffset(string version)
         {
@@ -29,11 +60,13 @@ namespace infinitas_statfetcher
             {
                 fileversion = reader.ReadLine().Trim(); /* Handles several kinds of newline formats */
             }
-            if (fileversion != version) {
+            if (fileversion != version)
+            {
                 Console.WriteLine($"Latest offsets available are for build {fileversion}, which didn't match detected version {version}");
                 return false;
             }
-            if (!Directory.Exists("archive")) {
+            if (!Directory.Exists("archive"))
+            {
                 Directory.CreateDirectory("archive");
             }
             var v = File.ReadAllLines("offsets.txt")[0];
@@ -56,15 +89,15 @@ namespace infinitas_statfetcher
         }
         public static async void ReportUnlock(string songid, UnlockData unlocks)
         {
-                var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
                     { "apikey", Config.API_key },
                     { "songid", songid },
                     { "state", unlocks.unlocks.ToString()}
                 }
-                );
-                var response = await client.PostAsync(Config.Server + "/api/unlocksong", content);
-                Utils.Debug(await response.Content.ReadAsStringAsync());
+            );
+            var response = await client.PostAsync(Config.Server + "/api/unlocksong", content);
+            Utils.Debug(await response.Content.ReadAsStringAsync());
         }
         public static async void ReportUnlocks(Dictionary<string, UnlockData> unlocks)
         {
@@ -72,9 +105,6 @@ namespace infinitas_statfetcher
             {
                 ReportUnlock(keyval.Key, keyval.Value);
             }
-        }
-        public static void UpdateEncodingFixes()
-        {
         }
         public static async void SendPlayData(PlayData latestData)
         {
@@ -152,7 +182,8 @@ namespace infinitas_statfetcher
                     };
 
                     AddChart(chart);
-                } catch
+                }
+                catch
                 {
 
                 }
@@ -179,7 +210,7 @@ namespace infinitas_statfetcher
                 }
                 else if (json["description"].ToString().Contains("Found 0"))
                 {
-                    if(search != marqueeTitle)
+                    if (search != marqueeTitle)
                     {
                         giveup = true;
                     }
@@ -192,7 +223,8 @@ namespace infinitas_statfetcher
                     {
                         search += " " + marqueeTitle.Split(' ')[included_sections];
                         included_sections++;
-                    } catch
+                    }
+                    catch
                     {
                         giveup = true;
                     }
