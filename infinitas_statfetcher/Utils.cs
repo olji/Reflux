@@ -472,22 +472,24 @@ namespace infinitas_statfetcher
                     Except(e);
                 }
             }
-            else
+            /* Add any potentially new songs */
+            foreach (var song in songDb)
             {
-                foreach (var song in songDb)
+                for (int i = 0; i < song.Value.level.Length; i++)
                 {
-                    for (int i = 0; i < song.Value.level.Length; i++)
-                    {
-                        /* Skip beginner difficulties */
-                        if(i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
-                        /* Skip charts with no difficulty rating */
-                        if(song.Value.level[i] == 0) { continue; }
+                    /* Skip beginner difficulties */
+                    if (i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
+                    /* Skip charts with no difficulty rating */
+                    if (song.Value.level[i] == 0) { continue; }
 
-                        trackerDb.Add(new Chart() { songID = song.Key, difficulty = (Difficulty)i }, new TrackerInfo() { grade = 0, lamp = 0 });
-                        SaveTracker();
+                    var c = new Chart() { songID = song.Key, difficulty = (Difficulty)i };
+
+                    if (!trackerDb.ContainsKey(c)) {
+                        trackerDb.Add(c, new TrackerInfo() { grade = 0, lamp = 0 });
                     }
                 }
             }
+            SaveTracker();
         }
         public static void SaveTracker()
         {
