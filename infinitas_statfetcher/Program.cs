@@ -122,8 +122,10 @@ namespace infinitas_statfetcher
             {
                 correctVersion = true;
             }
-            Network.UpdateEncodingFixes();
+            Network.UpdateSupportFile("encodingfixes");
+            Network.UpdateSupportFile("customtypes");
             Utils.LoadEncodingFixes();
+            Utils.LoadCustomTypes();
 
             if (!correctVersion)
             {

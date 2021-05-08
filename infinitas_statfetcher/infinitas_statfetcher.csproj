@@ -15,6 +15,9 @@
     <None Update="config.ini">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="customtypes.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="encodingfixes.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -16,9 +16,9 @@ namespace infinitas_statfetcher
     class Network
     {
         readonly static HttpClient client = new HttpClient();
-        static string GetLatestEncodingFix()
+        static string GetLatestSupportFile(string filename)
         {
-            var builder = new UriBuilder(Config.UpdateServer + "/encodingfixes.txt");
+            var builder = new UriBuilder(Config.UpdateServer + $"/{filename}.txt");
             var response = client.GetStringAsync(builder.Uri);
             response.Wait();
             return response.Result;
@@ -30,10 +30,18 @@ namespace infinitas_statfetcher
             response.Wait();
             return response.Result;
         }
-        public static void UpdateEncodingFixes()
+        public static void UpdateSupportFile(string filename)
         {
-            string currentVersion = File.ReadLines("encodingfixes.txt").Where(line => !line.Contains('\t')).FirstOrDefault();
-            var content = GetLatestEncodingFix();
+            string currentVersion = File.ReadLines($"{filename}.txt").First();
+            string content;
+            try
+            {
+                content = GetLatestSupportFile(filename);
+            } catch
+            {
+                Console.WriteLine($"Failed to fetch {filename}.txt from master");
+                return;
+            }
             var netVersion = "";
             using (var reader = new StringReader(content))
             {
@@ -48,8 +56,8 @@ namespace infinitas_statfetcher
                 {
                     Directory.CreateDirectory("archive");
                 }
-                File.Move("encodingfixes.txt", $"archive/encodingfixes_{currentVersion}.txt", true);
-                File.WriteAllText("encodingfixes.txt", content);
+                File.Move($"{filename}.txt", $"archive/{filename}_{currentVersion}.txt", true);
+                File.WriteAllText($"{filename}.txt", content);
             }
         }
         public static bool UpdateOffset(string version)

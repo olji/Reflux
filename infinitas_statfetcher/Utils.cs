@@ -87,6 +87,7 @@ namespace infinitas_statfetcher
         public static Dictionary<string, SongInfo> songDb = new Dictionary<string, SongInfo>();
         public static Dictionary<Chart, TrackerInfo> trackerDb = new Dictionary<Chart, TrackerInfo>();
         readonly static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
+        readonly static Dictionary<string, string> customTypes = new Dictionary<string, string>();
 
         public static void LoadEncodingFixes()
         {
@@ -95,6 +96,15 @@ namespace infinitas_statfetcher
                 if (!line.Contains('\t')) { continue; } /* Skip version string */
                 var pair = line.Split('\t');
                 knownEncodingIssues.Add(pair[0], pair[1]);
+            }
+        }
+        public static void LoadCustomTypes()
+        {
+            foreach (var line in File.ReadAllLines("customtypes.txt"))
+            {
+                if (!line.Contains(',')) { continue; } /* Skip version string */
+                var pair = line.Split(',');
+                customTypes.Add(pair[0], pair[1]);
             }
         }
         public static GameState FetchGameState(GameState currentState)
@@ -357,12 +367,34 @@ namespace infinitas_statfetcher
         #endregion
 
         #region Tracker related
+        public static void SaveTrackerData(string filename)
+        {
+
+            StringBuilder sb = new StringBuilder();
+            StringBuilder db = new StringBuilder();
+            sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter");
+            foreach (var entry in Utils.GetTrackerEntries())
+            {
+                sb.AppendLine(entry);
+            }
+            File.WriteAllText(filename, sb.ToString());
+            if (Config.Save_remote)
+            {
+                foreach (var song in unlockDb)
+                {
+                    db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
+                }
+                File.WriteAllText("unlockdb", db.ToString());
+            }
+        }
         static IEnumerable<string> GetTrackerEntries()
         {
             foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
             {
                 var song = unlockDb[songid];
-                StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t{song.type}\t");
+                string identifier = customTypes.ContainsKey(songid) ? customTypes[songid] : song.type.ToString();
+
+                StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t{song.type}\t{identifier}\t");
 
                 StringBuilder bitCostData = new StringBuilder();
                 StringBuilder chartData = new StringBuilder();
@@ -398,26 +430,6 @@ namespace infinitas_statfetcher
                 sb.Append(chartData);
 
                 yield return sb.ToString();
-            }
-        }
-        public static void SaveTrackerData(string filename)
-        {
-
-            StringBuilder sb = new StringBuilder();
-            StringBuilder db = new StringBuilder();
-            sb.AppendLine("title\tType\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter");
-            foreach (var entry in Utils.GetTrackerEntries())
-            {
-                sb.AppendLine(entry);
-            }
-            File.WriteAllText(filename, sb.ToString());
-            if (Config.Save_remote)
-            {
-                foreach (var song in unlockDb)
-                {
-                    db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
-                }
-                File.WriteAllText("unlockdb", db.ToString());
             }
         }
         public static void LoadTracker()
