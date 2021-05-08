@@ -95,7 +95,7 @@ namespace infinitas_statfetcher
             {
                 if (!line.Contains('\t')) { continue; } /* Skip version string */
                 var pair = line.Split('\t');
-                knownEncodingIssues.Add(pair[0], pair[1]);
+                knownEncodingIssues.Add(pair[0], pair[1].Trim());
             }
         }
         public static void LoadCustomTypes()
@@ -104,7 +104,7 @@ namespace infinitas_statfetcher
             {
                 if (!line.Contains(',')) { continue; } /* Skip version string */
                 var pair = line.Split(',');
-                customTypes.Add(pair[0], pair[1]);
+                customTypes.Add(pair[0], pair[1].Trim());
             }
         }
         public static GameState FetchGameState(GameState currentState)
