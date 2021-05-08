@@ -51,8 +51,8 @@ namespace infinitas_statfetcher
             DateTime net;
             try
             {
-                current = DateTime.ParseExact(currentVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
-                net = DateTime.ParseExact(netVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
+                current = DateTime.ParseExact(currentVersion.Trim(), "yyyyMMdd", CultureInfo.InvariantCulture);
+                net = DateTime.ParseExact(netVersion.Trim(), "yyyyMMdd", CultureInfo.InvariantCulture);
                 if (current < net)
                 {
                     Console.WriteLine("Found a more recent file for encoding fixes.");
