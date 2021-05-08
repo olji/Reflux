@@ -91,20 +91,32 @@ namespace infinitas_statfetcher
 
         public static void LoadEncodingFixes()
         {
-            foreach (var line in File.ReadAllLines("encodingfixes.txt"))
+            try
             {
-                if (!line.Contains('\t')) { continue; } /* Skip version string */
-                var pair = line.Split('\t');
-                knownEncodingIssues.Add(pair[0], pair[1].Trim());
+                foreach (var line in File.ReadAllLines("encodingfixes.txt"))
+                {
+                    if (!line.Contains('\t')) { continue; } /* Skip version string */
+                    var pair = line.Split('\t');
+                    knownEncodingIssues.Add(pair[0], pair[1].Trim());
+                }
+            } catch (Exception e)
+            {
+                Except(e);
             }
         }
         public static void LoadCustomTypes()
         {
-            foreach (var line in File.ReadAllLines("customtypes.txt"))
+            try {
+                foreach (var line in File.ReadAllLines("customtypes.txt"))
+                {
+                    if (!line.Contains(',')) { continue; } /* Skip version string */
+                    var pair = line.Split(',');
+                    customTypes.Add(pair[0], pair[1].Trim());
+                }
+            }
+            catch (Exception e)
             {
-                if (!line.Contains(',')) { continue; } /* Skip version string */
-                var pair = line.Split(',');
-                customTypes.Add(pair[0], pair[1].Trim());
+                Except(e);
             }
         }
         public static GameState FetchGameState(GameState currentState)
@@ -181,6 +193,11 @@ namespace infinitas_statfetcher
         public static void Debug(string msg)
         {
             Console.WriteLine(msg);
+        }
+        public static void Except(Exception e, string context="")
+        {
+            var stream = File.AppendText("crashlog");
+            stream.WriteLine($"{(context == "" ? "Unhandled exception" : context )}: {e.Message}");
         }
 
         #region Memory reading functions
@@ -370,21 +387,27 @@ namespace infinitas_statfetcher
         public static void SaveTrackerData(string filename)
         {
 
-            StringBuilder sb = new StringBuilder();
-            StringBuilder db = new StringBuilder();
-            sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter");
-            foreach (var entry in Utils.GetTrackerEntries())
+            try
             {
-                sb.AppendLine(entry);
-            }
-            File.WriteAllText(filename, sb.ToString());
-            if (Config.Save_remote)
-            {
-                foreach (var song in unlockDb)
+                StringBuilder sb = new StringBuilder();
+                StringBuilder db = new StringBuilder();
+                sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter");
+                foreach (var entry in Utils.GetTrackerEntries())
                 {
-                    db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
+                    sb.AppendLine(entry);
                 }
-                File.WriteAllText("unlockdb", db.ToString());
+                File.WriteAllText(filename, sb.ToString());
+                if (Config.Save_remote)
+                {
+                    foreach (var song in unlockDb)
+                    {
+                        db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
+                    }
+                    File.WriteAllText("unlockdb", db.ToString());
+                }
+            } catch (Exception e)
+            {
+                Except(e);
             }
         }
         static IEnumerable<string> GetTrackerEntries()
@@ -437,16 +460,23 @@ namespace infinitas_statfetcher
             /* Initialize if tracker file don't exist */
             if (File.Exists("tracker.db"))
             {
+                try {
                 foreach (var line in File.ReadAllLines("tracker.db"))
                 {
                     var segments = line.Split(',');
                     trackerDb.Add(new Chart() { songID = segments[0], difficulty = (Difficulty)int.Parse(segments[1]) }, new TrackerInfo() { grade = (Grade)int.Parse(segments[2]), lamp = (Lamp)int.Parse(segments[3]) });
+                    }
                 }
-            } else
-            {
-                foreach(var song in songDb)
+                catch (Exception e)
                 {
-                    for(int i = 0; i < song.Value.level.Length; i++)
+                    Except(e);
+                }
+            }
+            else
+            {
+                foreach (var song in songDb)
+                {
+                    for (int i = 0; i < song.Value.level.Length; i++)
                     {
                         /* Skip beginner difficulties */
                         if(i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
@@ -461,13 +491,19 @@ namespace infinitas_statfetcher
         }
         public static void SaveTracker()
         {
-            List<string> entries = new List<string>();
-            foreach (var entry in trackerDb)
+            try
             {
-                entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp}");
+                List<string> entries = new List<string>();
+                foreach (var entry in trackerDb)
+                {
+                    entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp}");
+                }
+                Debug("Saving tracker.db");
+                File.WriteAllLines("tracker.db", entries.ToArray());
+            } catch (Exception e)
+            {
+                Except(e);
             }
-            Debug("Saving tracker.db");
-            File.WriteAllLines("tracker.db", entries.ToArray());
         }
         #endregion
     }

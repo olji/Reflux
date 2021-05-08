@@ -47,17 +47,27 @@ namespace infinitas_statfetcher
             {
                 netVersion = reader.ReadLine().Trim();
             }
-            DateTime current = DateTime.ParseExact(currentVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
-            DateTime net = DateTime.ParseExact(netVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
-            if (current < net)
+            DateTime current;
+            DateTime net;
+            try
             {
-                Console.WriteLine("Found a more recent file for encoding fixes.");
-                if (!Directory.Exists("archive"))
+                current = DateTime.ParseExact(currentVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
+                net = DateTime.ParseExact(netVersion, "yyyyMMdd", CultureInfo.InvariantCulture);
+                if (current < net)
                 {
-                    Directory.CreateDirectory("archive");
+                    Console.WriteLine("Found a more recent file for encoding fixes.");
+                    if (!Directory.Exists("archive"))
+                    {
+                        Directory.CreateDirectory("archive");
+                    }
+                    File.Move($"{filename}.txt", $"archive/{filename}_{currentVersion}.txt", true);
+                    File.WriteAllText($"{filename}.txt", content);
                 }
-                File.Move($"{filename}.txt", $"archive/{filename}_{currentVersion}.txt", true);
-                File.WriteAllText($"{filename}.txt", content);
+            }
+            catch (Exception e)
+            {
+                Utils.Except(e, $"FileUpdate_{filename}");
+                throw;
             }
         }
         public static bool UpdateOffset(string version)
