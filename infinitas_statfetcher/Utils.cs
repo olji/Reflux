@@ -440,7 +440,7 @@ namespace infinitas_statfetcher
                         if (i < (int)Difficulty.DPB)
                         {
                             var levels = songDb[songid].level;
-                            int cost = (song.type == unlockType.Bits ? 500 * (levels[(int)chart.difficulty] + levels[(int)chart.difficulty + (int)Difficulty.DPB]) : 0);
+                            int cost = (song.type == unlockType.Bits && !customTypes.ContainsKey(songid) ? 500 * (levels[(int)chart.difficulty] + levels[(int)chart.difficulty + (int)Difficulty.DPB]) : 0);
                             bitCostData.Append($"{cost}\t");
                         }
                         chartData.Append($"{(unlockState ? "TRUE" : "FALSE")}\t");
