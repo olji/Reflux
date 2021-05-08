@@ -461,10 +461,10 @@ namespace infinitas_statfetcher
             if (File.Exists("tracker.db"))
             {
                 try {
-                foreach (var line in File.ReadAllLines("tracker.db"))
-                {
-                    var segments = line.Split(',');
-                    trackerDb.Add(new Chart() { songID = segments[0], difficulty = (Difficulty)int.Parse(segments[1]) }, new TrackerInfo() { grade = (Grade)int.Parse(segments[2]), lamp = (Lamp)int.Parse(segments[3]) });
+                    foreach (var line in File.ReadAllLines("tracker.db"))
+                    {
+                        var segments = line.Split(',');
+                        trackerDb.Add(new Chart() { songID = segments[0], difficulty = (Difficulty)Enum.Parse(typeof(Difficulty), segments[1]) }, new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]), lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]) });
                     }
                 }
                 catch (Exception e)
