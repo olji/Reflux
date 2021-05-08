@@ -55,7 +55,7 @@ namespace infinitas_statfetcher
                 net = DateTime.ParseExact(netVersion.Trim(), "yyyyMMdd", CultureInfo.InvariantCulture);
                 if (current < net)
                 {
-                    Console.WriteLine("Found a more recent file for encoding fixes.");
+                    Console.WriteLine($"Found a more recent entry of {filename}.txt at master.");
                     if (!Directory.Exists("archive"))
                     {
                         Directory.CreateDirectory("archive");
