@@ -240,10 +240,10 @@ namespace infinitas_statfetcher
                             if (Config.Save_local)
                             {
                                 /* Update best lamp/grade */
-                                Chart c = new Chart() { songID = latestData.Chart.songid, difficulty = Utils.DiffToInt(latestData.Chart.difficulty) };
+                                Chart c = new Chart() { songID = latestData.Chart.songid, difficulty = latestData.Chart.difficulty };
                                 var entry = Utils.trackerDb[c];
-                                entry.grade = Math.Max(Utils.trackerDb[c].grade, latestData.Grade);
-                                entry.lamp = Math.Max(Utils.trackerDb[c].lamp, latestData.Lamp);
+                                entry.grade = (Grade)Math.Max((int)Utils.trackerDb[c].grade, (int)latestData.Grade);
+                                entry.lamp = (Lamp)Math.Max((int)Utils.trackerDb[c].lamp, (int)latestData.Lamp);
                                 Utils.trackerDb[c] = entry;
                                 Utils.SaveTracker();
 
@@ -268,7 +268,7 @@ namespace infinitas_statfetcher
                         if (Config.Stream_Marquee)
                         {
                             Utils.Debug("Updating marquee.txt");
-                            var clearstatus = latestData.ClearState == "F" ? "FAIL!" : "CLEAR!";
+                            var clearstatus = latestData.Lamp == Lamp.F ? "FAIL!" : "CLEAR!";
                             File.WriteAllText("marquee.txt", $"{chart} {clearstatus}");
                         }
                     }

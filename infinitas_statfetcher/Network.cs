@@ -176,9 +176,9 @@ namespace infinitas_statfetcher
                     {
                         level = song.level[i],
                         songid = songid,
-                        difficulty = Utils.IntToDiff(i),
+                        difficulty = (Difficulty)i,
                         totalNotes = song.totalNotes[i],
-                        unlocked = Utils.GetUnlockStateForDifficulty(songid, i)
+                        unlocked = Utils.GetUnlockStateForDifficulty(songid, (Difficulty)i)
                     };
 
                     AddChart(chart);

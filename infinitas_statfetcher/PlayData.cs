@@ -12,7 +12,7 @@ namespace infinitas_statfetcher
         public bool unlocked;
         public string title;
         public string title_english;
-        public string difficulty;
+        public Difficulty difficulty;
         public string artist;
         public string genre;
         public string bpm;
@@ -26,13 +26,14 @@ namespace infinitas_statfetcher
         ChartInfo chart;
         int gauge;
         int ex;
-        string songID, grade, clearLamp;
+        string songID;
+        Grade grade;
+        Lamp clearLamp;
         public bool DataAvailable { get; private set; }
         public ChartInfo Chart { get { return chart; } }
-        public int Grade { get { return Utils.GradeToInt(grade); } }
-        public int Lamp { get { return Utils.LampToInt(clearLamp); } }
+        public Grade Grade { get { return grade; } }
+        public Lamp Lamp { get { return clearLamp; } }
         public bool PrematureEnd { get { return judges.prematureEnd; } }
-        public string ClearState { get { return clearLamp; } }
         public int JudgedNotes { get { return judges.notesJudged; } }
         public bool MissCountValid { get { return (DataAvailable && !PrematureEnd && settings.assist == "OFF"); } }
 
@@ -51,33 +52,37 @@ namespace infinitas_statfetcher
 
             short word = 4;
 
-            int diffVal = 0;
+            Difficulty difficulty = 0;
             try
             {
                 var song = Utils.ReadInt32(Offsets.PlayData, 0, word);
-                diffVal = Utils.ReadInt32(Offsets.PlayData, word, word);
-                var lamp = Utils.ReadInt32(Offsets.PlayData, word * 6, word);
+                difficulty = (Difficulty)Utils.ReadInt32(Offsets.PlayData, word, word);
+                clearLamp = (Lamp)Utils.ReadInt32(Offsets.PlayData, word * 6, word);
                 gauge = Utils.ReadInt32(Offsets.PlayData, word * 8, word);
 
                 songID = song.ToString("00000");
-                clearLamp = Utils.IntToLamp(lamp);
-                chart = FetchChartInfo(Utils.songDb[songID], diffVal);
+                chart = FetchChartInfo(Utils.songDb[songID], difficulty);
                 DataAvailable = true;
             }
             catch
             {
                 Console.WriteLine("Unable to fetch play data, using currentplaying value instead");
                 var currentChart = Utils.FetchCurrentChart();
-                songID = currentChart.id;
-                diffVal = currentChart.diff;
-                clearLamp = "NA"; /* What clear lamp should be given on stuff not sent to server? */
-                chart = FetchChartInfo(Utils.songDb[songID], diffVal);
+                songID = currentChart.songID;
+                difficulty = currentChart.difficulty;
+                clearLamp = Lamp.AC; /* What clear lamp should be given on stuff not sent to server? */
+                chart = FetchChartInfo(Utils.songDb[songID], difficulty);
                 DataAvailable = false;
+            }
+
+            if (judges.PFC)
+            {
+                clearLamp = Lamp.PFC;
             }
 
 
 
-            var maxEx = Utils.songDb[songID].totalNotes[diffVal] * 2;
+            var maxEx = Utils.songDb[songID].totalNotes[(int)difficulty] * 2;
             var exPart = (double)maxEx / 9;
 
             var exscore = (judges.pgreat * 2 + judges.great);
@@ -85,52 +90,52 @@ namespace infinitas_statfetcher
 
             if (exscore > exPart * 8)
             {
-                grade = "AAA";
+                grade = Grade.AAA;
             }
             else if (exscore > exPart * 7)
             {
-                grade = "AA";
+                grade = Grade.AA;
             }
             else if (exscore > exPart * 6)
             {
-                grade = "A";
+                grade = Grade.A;
             }
             else if (exscore > exPart * 5)
             {
-                grade = "B";
+                grade = Grade.B;
             }
             else if (exscore > exPart * 4)
             {
-                grade = "C";
+                grade = Grade.C;
             }
             else if (exscore > exPart * 3)
             {
-                grade = "D";
+                grade = Grade.D;
             }
             else if (exscore > exPart * 2)
             {
-                grade = "E";
+                grade = Grade.E;
             }
             else
             {
-                grade = "F";
+                grade = Grade.F;
             }
 
         }
-        ChartInfo FetchChartInfo(SongInfo song, int diffVal)
+        ChartInfo FetchChartInfo(SongInfo song, Difficulty diff)
         {
             ChartInfo result = new ChartInfo();
             /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
-            result.difficulty = Utils.IntToDiff(diffVal);
-            result.level = song.level[diffVal];
+            result.difficulty = diff;
+            result.level = song.level[(int)diff];
             result.title = song.title;
             result.title_english = song.title_english;
-            result.totalNotes = song.totalNotes[diffVal];
+            result.totalNotes = song.totalNotes[(int)diff];
             result.artist = song.artist;
             result.genre = song.genre;
             result.bpm = song.bpm;
             result.songid = song.ID;
-            result.unlocked = Utils.GetUnlockStateForDifficulty(song.ID, diffVal);
+            result.unlocked = Utils.GetUnlockStateForDifficulty(song.ID, diff);
             return result;
 
         }
@@ -146,12 +151,12 @@ namespace infinitas_statfetcher
                 { "artist", chart.artist },
                 { "genre", chart.genre },
                 { "notecount", chart.totalNotes.ToString() },
-                { "diff", chart.difficulty },
+                { "diff", chart.difficulty.ToString() },
                 { "level", chart.level.ToString() },
                 { "unlocked", chart.unlocked.ToString() },
-                { "grade", grade },
+                { "grade", grade.ToString() },
                 { "gaugepercent", gauge.ToString() },
-                { "lamp", clearLamp },
+                { "lamp", clearLamp.ToString() },
                 { "exscore", ex.ToString() },
                 { "notesjudged", judges.notesJudged.ToString() },
                 { "pgreat", judges.pgreat.ToString() },
@@ -189,8 +194,8 @@ namespace infinitas_statfetcher
                 json["matchType"] = "songID";
                 json["identifier"] = kamaiID;
             }
-            json["playtype"] = chart.difficulty.Substring(0, 2);
-            json["difficulty"] = expandDifficulty(chart.difficulty.Substring(2, 1));
+            json["playtype"] = chart.difficulty.ToString().Substring(0, 2);
+            json["difficulty"] = expandDifficulty(chart.difficulty.ToString().Substring(2, 1));
             json["timeAchieved"] = new DateTimeOffset(timestamp).ToUnixTimeMilliseconds();
             json["hitData"] = new JObject();
             json["hitData"]["pgreat"] = judges.pgreat;
@@ -248,20 +253,21 @@ namespace infinitas_statfetcher
             }
             throw new Exception($"Unexpected difficulty character {diff}");
         }
-        string expandLamp(string lamp)
+        string expandLamp(Lamp lamp)
         {
             switch (lamp)
             {
-                case "NP": return "NO PLAY";
-                case "F": return "FAILED";
-                case "AC": return "ASSIST CLEAR";
-                case "EC": return "EASY CLEAR";
-                case "NC": return "CLEAR";
-                case "HC": return "HARD CLEAR";
-                case "EX": return "EX HARD CLEAR";
-                case "FC": return "FULL COMBO";
+                case Lamp.NP: return "NO PLAY";
+                case Lamp.F: return "FAILED";
+                case Lamp.AC: return "ASSIST CLEAR";
+                case Lamp.EC: return "EASY CLEAR";
+                case Lamp.NC: return "CLEAR";
+                case Lamp.HC: return "HARD CLEAR";
+                case Lamp.EX: return "EX HARD CLEAR";
+                case Lamp.FC:
+                case Lamp.PFC: return "FULL COMBO";
             }
-            throw new Exception($"Unexpected lamp code {lamp}");
+            throw new Exception($"Unexpected lamp {lamp}");
         }
     }
 }

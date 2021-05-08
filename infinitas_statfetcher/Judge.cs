@@ -14,6 +14,7 @@
         public int notesJudged;
         public bool prematureEnd;
 
+        public bool PFC { get { return (good + bad + poor) == 0; } }
         public void Fetch(long judgedata, long noteprogress)
         {
             short word = 4;
