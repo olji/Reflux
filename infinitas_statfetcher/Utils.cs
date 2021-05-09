@@ -489,6 +489,26 @@ namespace infinitas_statfetcher
                     }
                 }
             }
+            if (Config.Merge_tracker_files)
+            {
+                var diffs = GetTrackerDifferences();
+                if (diffs.Count > 0)
+                {
+                    /* Replace data in tracker.db with whatever's higher, the value already in tracker.db or what was read from tracker.tsv */
+                    foreach (var pair in diffs)
+                    {
+                        var entry = trackerDb[pair.Key];
+                        var oldgrade = entry.grade;
+                        var oldlamp = entry.lamp;
+                        entry.grade = (Grade)Math.Max((int)pair.Value.Item1.grade, (int)pair.Value.Item2.grade);
+                        entry.lamp = (Lamp)Math.Max((int)pair.Value.Item1.lamp, (int)pair.Value.Item2.lamp);
+                        trackerDb[pair.Key] = entry;
+                        Debug($"Changing {songDb[pair.Key.songID].title} {pair.Key.difficulty} grade from {oldgrade} to {entry.grade}");
+                        Debug($"Changing {songDb[pair.Key.songID].title} {pair.Key.difficulty} lamp from {oldlamp} to {entry.lamp}");
+                    }
+                    File.Copy("tracker.db", $"archive/tracker_{DateTime.Now.ToString("yyyymmdd")}.db");
+                }
+            }
             SaveTracker();
         }
         public static void SaveTracker()
@@ -506,6 +526,35 @@ namespace infinitas_statfetcher
             {
                 Except(e);
             }
+        }
+        public static Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>> GetTrackerDifferences()
+        {
+            Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>> result = new Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>>();
+            if (!File.Exists("tracker.tsv")) { return result; }
+
+            foreach(var line in File.ReadAllLines("tracker.tsv"))
+            {
+                var sections = line.Split('\t');
+                if(sections[0].ToLower() == "title") { continue; }
+                var songid = songDb.Where(x => x.Value.title == sections[0]).First().Key;
+
+                for(int i = 0; i < 6; i++)
+                {
+                    /* -1 to adjust for one-indexing of difficulty section to avoid multiplication of 0 */
+                    int diffInfoIndex = 6 + (i * 4);
+                    /* Offset i for difficulty enum, different offsets for SP and DP */
+                    Difficulty diff = (Difficulty)(i < 3 ? i + 1 : i + 3);
+                    if(songDb[songid].level[(int)diff] == 0) { continue; }
+                    Chart chart = new Chart() { songID = songid, difficulty = diff };
+                    Lamp lamp = (Lamp)Enum.Parse(typeof(Lamp), sections[diffInfoIndex + 2]);
+                    Grade grade = (Grade)Enum.Parse(typeof(Grade), sections[diffInfoIndex + 3]);
+                    if(lamp != trackerDb[chart].lamp || grade != trackerDb[chart].grade)
+                    {
+                        result.Add(chart, new Tuple<TrackerInfo, TrackerInfo>(trackerDb[chart], new TrackerInfo() { grade = grade, lamp = lamp }));
+                    }
+                }
+            }
+            return result;
         }
         #endregion
     }
