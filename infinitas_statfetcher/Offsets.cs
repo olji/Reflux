@@ -5,13 +5,33 @@ namespace infinitas_statfetcher
 {
     static class Offsets
     {
+        /// <summary>
+        /// Version these offsets are valid for
+        /// </summary>
         public static string Version { get; private set; }
+        /// <summary>
+        /// Location of songlist
+        /// </summary>
         public static long SongList { get; private set; }
+        /// <summary>
+        /// Location of judge data
+        /// </summary>
         public static long JudgeData {get; private set; }
+        /// <summary>
+        /// Location of play data (song, difficulty, ex score, lamp)
+        /// </summary>
         public static long PlayData { get; private set; }
+        /// <summary>
+        /// Location of play settings
+        /// </summary>
         public static long PlaySettings { get; private set; }
+        /// <summary>
+        /// Location of the unlock data array
+        /// </summary>
         public static long UnlockData { get; private set; }
-        public static long NotesProgress { get; private set; }
+        /// <summary>
+        /// Location where information of currently playing song and difficulty is found
+        /// </summary>
         public static long CurrentSong { get; private set; }
 
         public static void LoadOffsets(string filename)
@@ -37,7 +57,6 @@ namespace infinitas_statfetcher
                     case "songlist": SongList = offset; break;
                     case "unlockdata": UnlockData = offset; break;
                     case "playsettings": PlaySettings = offset; break;
-                    case "notesprogress": NotesProgress = offset; break;
                     case "currentsong": CurrentSong = offset; break;
                 }
             }
@@ -47,7 +66,6 @@ namespace infinitas_statfetcher
             Utils.Debug($"Playcard: {PlayData:X}");
             Utils.Debug($"Judgeinfo: {JudgeData:X}");
             Utils.Debug($"Playsettings: {PlaySettings:X}");
-            Utils.Debug($"Notesprogress: {NotesProgress:X}");
             Utils.Debug($"CurrentSong: {CurrentSong:X}");
         }
     }

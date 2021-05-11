@@ -16,6 +16,11 @@ namespace infinitas_statfetcher
     class Network
     {
         readonly static HttpClient client = new HttpClient();
+        /// <summary>
+        /// Fetch file content of target and return
+        /// </summary>
+        /// <param name="filename">File to fetch</param>
+        /// <returns>File contents</returns>
         static string GetLatestSupportFile(string filename)
         {
             var builder = new UriBuilder(Config.UpdateServer + $"/{filename}.txt");
@@ -23,15 +28,13 @@ namespace infinitas_statfetcher
             response.Wait();
             return response.Result;
         }
-        static string GetLatestOffset()
+        /// <summary>
+        /// Check version of support file with what's at server and replace if newer
+        /// </summary>
+        /// <param name="filename">File to process</param>
+        public static void UpdateSupportFile(string filename, string version = "")
         {
-            var builder = new UriBuilder(Config.UpdateServer + "/offsets.txt");
-            var response = client.GetStringAsync(builder.Uri);
-            response.Wait();
-            return response.Result;
-        }
-        public static void UpdateSupportFile(string filename)
-        {
+
             string currentVersion = File.ReadLines($"{filename}.txt").First();
             string content;
             try
@@ -70,9 +73,14 @@ namespace infinitas_statfetcher
                 throw;
             }
         }
+        /// <summary>
+        /// Fetches latest version of offsets.txt and see if it's version matches what is needed, replace current if version matches.
+        /// </summary>
+        /// <param name="version">Version to match</param>
+        /// <returns>true if net version matched for version, false otherwise</returns>
         public static bool UpdateOffset(string version)
         {
-            var filecontent = GetLatestOffset();
+            var filecontent = GetLatestSupportFile("offsets");
             var fileversion = "";
             using (var reader = new StringReader(filecontent))
             {
@@ -93,6 +101,10 @@ namespace infinitas_statfetcher
             Offsets.LoadOffsets("offsets.txt");
             return true;
         }
+        /// <summary>
+        /// Update the unlock type for a chart at remote
+        /// </summary>
+        /// <param name="song"></param>
         public static async void UpdateChartUnlockType(SongInfo song)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
@@ -105,6 +117,11 @@ namespace infinitas_statfetcher
             var response = await client.PostAsync(Config.Server + "/api/updatesong", content);
             Utils.Debug(await response.Content.ReadAsStringAsync());
         }
+        /// <summary>
+        /// Update unlock state of charts for song at remote
+        /// </summary>
+        /// <param name="songid">Song whose charts are to be updated</param>
+        /// <param name="unlocks">Unlock information for song</param>
         public static async void ReportUnlock(string songid, UnlockData unlocks)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
@@ -117,6 +134,10 @@ namespace infinitas_statfetcher
             var response = await client.PostAsync(Config.Server + "/api/unlocksong", content);
             Utils.Debug(await response.Content.ReadAsStringAsync());
         }
+        /// <summary>
+        /// Report unlock state for multiple songs
+        /// </summary>
+        /// <param name="unlocks">Dictionary where key is songIDs, and values are the unlock information</param>
         public static async void ReportUnlocks(Dictionary<string, UnlockData> unlocks)
         {
             foreach (var keyval in unlocks)
@@ -124,6 +145,10 @@ namespace infinitas_statfetcher
                 ReportUnlock(keyval.Key, keyval.Value);
             }
         }
+        /// <summary>
+        /// Send play information to remote
+        /// </summary>
+        /// <param name="latestData">Play information</param>
         public static async void SendPlayData(PlayData latestData)
         {
             var content = new FormUrlEncodedContent(latestData.ToPostForm());
@@ -141,7 +166,11 @@ namespace infinitas_statfetcher
                 Console.WriteLine("Uploading failed");
             }
         }
-        public static async void AddSong(SongInfo song)
+        /// <summary>
+        /// Add a new song at remote
+        /// </summary>
+        /// <param name="song">Song metadata</param>
+        static async void AddSong(SongInfo song)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
@@ -158,7 +187,11 @@ namespace infinitas_statfetcher
             var response = await client.PostAsync(Config.Server + "/api/addsong", content);
             Utils.Debug(await response.Content.ReadAsStringAsync());
         }
-        public static async void AddChart(ChartInfo chart)
+        /// <summary>
+        /// Add a new chart for a song at remote
+        /// </summary>
+        /// <param name="chart">Metadata for one chart difficulty</param>
+        static async void AddChart(ChartInfo chart)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
@@ -174,7 +207,10 @@ namespace infinitas_statfetcher
             Utils.Debug(await response.Content.ReadAsStringAsync());
 
         }
-
+        /// <summary>
+        /// Upload new song and chart data to remote
+        /// </summary>
+        /// <param name="songid">ID of song to add</param>
         public static async void UploadSongInfo(string songid)
         {
             var song = Utils.songDb[songid];
@@ -208,14 +244,20 @@ namespace infinitas_statfetcher
 
             }
         }
-        public static async Task<int?> Kamai_GetSongID(string marqueeTitle)
+        /// <summary>
+        /// Try to find out songID of Kamaitachi song entries
+        /// </summary>
+        /// <param name="alterativeTitle">The alternative title that is void of special characters</param>
+        /// <returns></returns>
+        public static async Task<int?> Kamai_GetSongID(string alterativeTitle)
         {
-            var search = marqueeTitle;
+            var search = alterativeTitle;
             var client = new HttpClient();
             var builder = new UriBuilder("https://api.kamaitachi.xyz/v1/games/iidx/songs/search");
             bool songFound = false, giveup = false;
             int included_sections = 0;
             int? songID = null;
+            /* If nothing matches the alternative title, split on spaces and append one section at a time, since it's generally strange spacing that's the issue */
             do
             {
                 builder.Query = $"title={search}";
@@ -228,18 +270,18 @@ namespace infinitas_statfetcher
                 }
                 else if (json["description"].ToString().Contains("Found 0"))
                 {
-                    if (search != marqueeTitle)
+                    if (search != alterativeTitle)
                     {
                         giveup = true;
                     }
-                    search = marqueeTitle.Split(' ')[0];
+                    search = alterativeTitle.Split(' ')[0];
                     included_sections = 1;
                 }
                 else
                 {
                     try
                     {
-                        search += " " + marqueeTitle.Split(' ')[included_sections];
+                        search += " " + alterativeTitle.Split(' ')[included_sections];
                         included_sections++;
                     }
                     catch

@@ -29,12 +29,20 @@ namespace infinitas_statfetcher
         string songID;
         Grade grade;
         Lamp clearLamp;
+        /// <summary>
+        /// False if play data isn't available (H-RAN, BATTLE or assist options enabled)
+        /// </summary>
         public bool DataAvailable { get; private set; }
         public ChartInfo Chart { get { return chart; } }
         public Grade Grade { get { return grade; } }
         public Lamp Lamp { get { return clearLamp; } }
+        /// <summary>
+        /// Play ended prematurely (Quit or failed HC/EXH)
+        /// </summary>
         public bool PrematureEnd { get { return judges.prematureEnd; } }
-        public int JudgedNotes { get { return judges.notesJudged; } }
+        /// <summary>
+        /// True if miss count shouldn't be calculated and saved (When it's not shown in the result screens essentially)
+        /// </summary>
         public bool MissCountValid { get { return (DataAvailable && !PrematureEnd && settings.assist == "OFF"); } }
 
         public PlayData()
@@ -42,11 +50,14 @@ namespace infinitas_statfetcher
             judges = new Judge();
             settings = new Settings();
         }
+        /// <summary>
+        /// Fetch all data relating to the recent play
+        /// </summary>
         public void Fetch()
         {
 
-            judges.Fetch(Offsets.JudgeData, Offsets.NotesProgress);
-            settings.Fetch(Offsets.PlaySettings, judges.playtype);
+            judges.Fetch();
+            settings.Fetch(judges.playtype);
 
             timestamp = DateTime.UtcNow;
 
@@ -79,8 +90,6 @@ namespace infinitas_statfetcher
             {
                 clearLamp = Lamp.PFC;
             }
-
-
 
             var maxEx = Utils.songDb[songID].totalNotes[(int)difficulty] * 2;
             var exPart = (double)maxEx / 9;
@@ -122,23 +131,33 @@ namespace infinitas_statfetcher
             }
 
         }
-        ChartInfo FetchChartInfo(SongInfo song, Difficulty diff)
+        /// <summary>
+        /// Fetch all metadata for a specific chart
+        /// </summary>
+        /// <param name="song"></param>
+        /// <param name="difficulty"></param>
+        /// <returns></returns>
+        ChartInfo FetchChartInfo(SongInfo song, Difficulty difficulty)
         {
             ChartInfo result = new ChartInfo();
             /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
-            result.difficulty = diff;
-            result.level = song.level[(int)diff];
+            result.difficulty = difficulty;
+            result.level = song.level[(int)difficulty];
             result.title = song.title;
             result.title_english = song.title_english;
-            result.totalNotes = song.totalNotes[(int)diff];
+            result.totalNotes = song.totalNotes[(int)difficulty];
             result.artist = song.artist;
             result.genre = song.genre;
             result.bpm = song.bpm;
             result.songid = song.ID;
-            result.unlocked = Utils.GetUnlockStateForDifficulty(song.ID, diff);
+            result.unlocked = Utils.GetUnlockStateForDifficulty(song.ID, difficulty);
             return result;
 
         }
+        /// <summary>
+        /// Generate and return a post form to send to remote
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<string, string> ToPostForm()
         {
             return new Dictionary<string, string>
@@ -158,7 +177,7 @@ namespace infinitas_statfetcher
                 { "gaugepercent", gauge.ToString() },
                 { "lamp", clearLamp.ToString() },
                 { "exscore", ex.ToString() },
-                { "notesjudged", judges.notesJudged.ToString() },
+                { "prematureend", judges.prematureEnd.ToString().ToLower() },
                 { "pgreat", judges.pgreat.ToString() },
                 { "great", judges.great.ToString() },
                 { "good", judges.good.ToString() },
@@ -176,6 +195,10 @@ namespace infinitas_statfetcher
             };
 
         }
+        /// <summary>
+        /// Generate and return a JSON entry to save to the json document
+        /// </summary>
+        /// <returns></returns>
         public JObject GetJsonEntry()
         {
             var kamaiTask = Network.Kamai_GetSongID(chart.title_english);
@@ -214,6 +237,10 @@ namespace infinitas_statfetcher
             }
             return json;
         }
+        /// <summary>
+        /// Generate and return an entry to save to the session tsv
+        /// </summary>
+        /// <returns></returns>
         public string GetTsvEntry()
         {
             StringBuilder sb = new StringBuilder($"{chart.title}\t{chart.difficulty}");
@@ -241,6 +268,11 @@ namespace infinitas_statfetcher
             sb.Append($"\t{timestamp}");
             return sb.ToString();
         }
+        /// <summary>
+        /// Expand difficulty abbreviations to full string
+        /// </summary>
+        /// <param name="diff">Abbreviated difficulty void of SP or DP</param>
+        /// <returns></returns>
         string expandDifficulty(string diff)
         {
             switch (diff)
@@ -253,6 +285,11 @@ namespace infinitas_statfetcher
             }
             throw new Exception($"Unexpected difficulty character {diff}");
         }
+        /// <summary>
+        /// Expand lamp abbreviations to full strings
+        /// </summary>
+        /// <param name="lamp"></param>
+        /// <returns></returns>
         string expandLamp(Lamp lamp)
         {
             switch (lamp)

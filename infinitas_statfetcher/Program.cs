@@ -138,7 +138,7 @@ namespace infinitas_statfetcher
             bool songlistFetched = false;
             while (!songlistFetched)
             {
-                while (!Utils.SongListAvailable()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
+                while (!Utils.DataLoaded()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
                 Thread.Sleep(1000); /* Extra sleep just to avoid potentially undiscovered race conditions */
                 Utils.FetchSongDataBase();
                 if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
@@ -233,7 +233,7 @@ namespace infinitas_statfetcher
                         Thread.Sleep(1000); /* Sleep to avoid race condition */
                         var latestData = new PlayData();
                         latestData.Fetch();
-                        if (latestData.JudgedNotes != 0 && latestData.DataAvailable)
+                        if (latestData.DataAvailable)
                         {
                             if (Config.Save_remote)
                             {
@@ -328,6 +328,10 @@ namespace infinitas_statfetcher
             }
         }
 
+        /// <summary>
+        /// Prints latest play data to the screen
+        /// </summary>
+        /// <param name="latestData"></param>
         static void Print_PlayData(PlayData latestData)
         {
             Console.WriteLine("\nLATEST CLEAR:");
@@ -349,7 +353,13 @@ namespace infinitas_statfetcher
     }
 
     #region Custom objects
+    /// <summary>
+    /// Enum for representing what screen is currently loaded
+    /// </summary>
     enum GameState { playing = 0, resultScreen, songSelect };
+    /// <summary>
+    /// Enum for representing what playtype the player is using
+    /// </summary>
     public enum PlayType { P1 = 0, P2, DP }
     #endregion
 }

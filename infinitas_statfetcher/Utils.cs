@@ -46,6 +46,9 @@ namespace infinitas_statfetcher
         AAA,
     }
 
+    /// <summary>
+    /// All metadata for a song and its charts
+    /// </summary>
     public struct SongInfo
     {
         public string ID;
@@ -58,17 +61,29 @@ namespace infinitas_statfetcher
         public string genre;
         public string bpm;
     }
+    /// <summary>
+    /// Information saved to the local tracker file
+    /// </summary>
     public struct TrackerInfo
     {
         public Grade grade;
         public Lamp lamp;
     }
+    /// <summary>
+    /// Generic chart object for dictionary key lookup
+    /// </summary>
     public struct Chart
     {
         public string songID;
         public Difficulty difficulty;
     }
+    /// <summary>
+    /// The three different kind of song unlock types, Bits are anything that is visible while locked, and Sub is anything that is not visible while locked
+    /// </summary>
     public enum unlockType { Base = 1, Bits, Sub }; // Assume subscription songs unless specifically addressed in customtypes.txt
+    /// <summary>
+    /// Structure of the unlock data array in memory
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct UnlockData
     {
@@ -83,12 +98,30 @@ namespace infinitas_statfetcher
             Int64 lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
         public static IntPtr handle;
+        /// <summary>
+        /// DB for keeping track of unlocks and potential changes
+        /// </summary>
         public static Dictionary<string, UnlockData> unlockDb = new Dictionary<string, UnlockData>();
+        /// <summary>
+        /// DB for easily looking up songs and their chart information
+        /// </summary>
         public static Dictionary<string, SongInfo> songDb = new Dictionary<string, SongInfo>();
+        /// <summary>
+        /// DB for keeping track of PBs on different charts
+        /// </summary>
         public static Dictionary<Chart, TrackerInfo> trackerDb = new Dictionary<Chart, TrackerInfo>();
+        /// <summary>
+        /// DB of known encoding issues or inconsistencies to how they're generally known
+        /// </summary>
         readonly static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
+        /// <summary>
+        /// DB of custom types of unlocks, to separate DJP unlocks from bit unlocks and song pack unlocks from subscription songs
+        /// </summary>
         readonly static Dictionary<string, string> customTypes = new Dictionary<string, string>();
 
+        /// <summary>
+        /// Populate DB for encoding issues, tab separated since commas can appear in title
+        /// </summary>
         public static void LoadEncodingFixes()
         {
             try
@@ -104,6 +137,9 @@ namespace infinitas_statfetcher
                 Except(e);
             }
         }
+        /// <summary>
+        /// Populate DB for custom unlock types, comma separated
+        /// </summary>
         public static void LoadCustomTypes()
         {
             try {
@@ -119,6 +155,11 @@ namespace infinitas_statfetcher
                 Except(e);
             }
         }
+        /// <summary>
+        /// Figure out if INFINITAS is currently playing a song, showing the results or hanging out in the song select
+        /// </summary>
+        /// <param name="currentState"></param>
+        /// <returns></returns>
         public static GameState FetchGameState(GameState currentState)
         {
             short word = 4;
@@ -138,11 +179,19 @@ namespace infinitas_statfetcher
             }
             return GameState.resultScreen;
         }
+        /// <summary>
+        /// Fetch and format the current chart for saving to currentsong.txt
+        /// </summary>
+        /// <param name="includeDiff"></param>
+        /// <returns></returns>
         public static string CurrentChart(bool includeDiff = false)
         {
             var values = FetchCurrentChart();
             return $"{songDb[values.songID].title_english}{(includeDiff ? " " + values.difficulty.ToString() : "")}";
         }
+        /// <summary>
+        /// Populate database for song metadata
+        /// </summary>
         public static void FetchSongDataBase()
         {
             Dictionary<string, SongInfo> result = new Dictionary<string, SongInfo>();
@@ -181,6 +230,13 @@ namespace infinitas_statfetcher
             }
             songDb = result;
         }
+        /// <summary>
+        /// Util function to get an 32-bit integer from any section in a byte array
+        /// </summary>
+        /// <param name="input">Byte array to get value from</param>
+        /// <param name="skip">Amount of bytes to skip before parsing</param>
+        /// <param name="take">Amount of bytes to use for parsing</param>
+        /// <returns></returns>
         static Int32 BytesToInt32(byte[] input, int skip, int take)
         {
             if (skip == 0)
@@ -194,6 +250,11 @@ namespace infinitas_statfetcher
         {
             Console.WriteLine(msg);
         }
+        /// <summary>
+        /// Print exception message to log for easier viewing
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="context"></param>
         public static void Except(Exception e, string context="")
         {
             var stream = File.AppendText("crashlog");
@@ -201,6 +262,10 @@ namespace infinitas_statfetcher
         }
 
         #region Memory reading functions
+        /// <summary>
+        /// Find the song and difficulty that is currently being played
+        /// </summary>
+        /// <returns></returns>
         public static Chart FetchCurrentChart()
         {
             byte[] buffer = new byte[32];
@@ -210,7 +275,11 @@ namespace infinitas_statfetcher
             int diff = BytesToInt32(buffer, 4, 4);
             return new Chart() { songID = songid.ToString("D5"), difficulty = (Difficulty)diff };
         }
-        public static bool SongListAvailable()
+        /// <summary>
+        /// Figure out if all necessary data for populating different DBs are available
+        /// </summary>
+        /// <returns></returns>
+        public static bool DataLoaded()
         {
             byte[] buffer = new byte[64];
             int nRead = 0;
@@ -224,6 +293,13 @@ namespace infinitas_statfetcher
             Debug($"Read number: {id} in start of unlock list, expecting 1000");
             return title.Contains("5.1.1.") && id == 1000;
         }
+        /// <summary>
+        /// Function to read any position in memory and convert to Int32
+        /// </summary>
+        /// <param name="position">Base offset in memory</param>
+        /// <param name="offset">Potential extra offset for readability instead of just adding to <paramref name="position"/></param>
+        /// <param name="size">Amount of bytes to read and convert</param>
+        /// <returns></returns>
         public static Int32 ReadInt32(long position, int offset, int size)
         {
             int bytesRead = 0;
@@ -233,6 +309,11 @@ namespace infinitas_statfetcher
             ReadProcessMemory((int) handle, position+offset, buffer, buffer.Length, ref bytesRead);
             return Utils.BytesToInt32(buffer.Take(size).ToArray(), 0, size);
         }
+        /// <summary>
+        /// Fetch metadata for one song
+        /// </summary>
+        /// <param name="position">Start position of song metadata</param>
+        /// <returns>SongInfo object containing all metadata</returns>
         private static SongInfo FetchSongInfo(long position)
         {
             int bytesRead = 0;
@@ -301,8 +382,7 @@ namespace infinitas_statfetcher
         /// <summary>
         /// Update and detect changes to song unlock states
         /// </summary>
-        /// <param name="unlocks"></param>
-        /// <returns>Changes between the two unlock statuses</returns>
+        /// <returns>Changes between the two unlock statuses, if any. Empty dictionary otherwise</returns>
         public static Dictionary<string, UnlockData> UpdateUnlockStates()
         {
             var oldUnlocks = unlockDb;
@@ -319,6 +399,10 @@ namespace infinitas_statfetcher
             }
             return changes;
         }
+        /// <summary>
+        /// Read and populate a dictionary for the unlock information of all songs
+        /// </summary>
+        /// <returns></returns>
         public static Dictionary<string, UnlockData> GetUnlockStates()
         {
             int songAmount = songDb.Count;
@@ -344,6 +428,12 @@ namespace infinitas_statfetcher
 
             return unlockDb;
         }
+
+        /// <summary>
+        /// Convert a byte array to an <see cref="UnlockData"/> object
+        /// </summary>
+        /// <param name="buf">Byte array</param>
+        /// <returns>An <see cref="UnlockData"/> object representation of the input</returns>
         static int ParseUnlockBuffer(byte[] buf)
         {
             int position = 0;
@@ -375,6 +465,12 @@ namespace infinitas_statfetcher
             return extra;
 
         }
+        /// <summary>
+        /// Get the unlock state for a specific chart of a song
+        /// </summary>
+        /// <param name="songid">SongID of interest</param>
+        /// <param name="diff">Chart difficulty</param>
+        /// <returns>True if unlocked, false if locked</returns>
         public static bool GetUnlockStateForDifficulty(string songid, Difficulty diff)
         {
             var unlockBits = unlockDb[songid].unlocks;
@@ -384,6 +480,10 @@ namespace infinitas_statfetcher
         #endregion
 
         #region Tracker related
+        /// <summary>
+        /// Save tracker tsv and unlockdb, as they're somewhat interlinked due to the unlock information in both
+        /// </summary>
+        /// <param name="filename"></param>
         public static void SaveTrackerData(string filename)
         {
 
@@ -410,6 +510,10 @@ namespace infinitas_statfetcher
                 Except(e);
             }
         }
+        /// <summary>
+        /// Get each song entry for the tracker TSV
+        /// </summary>
+        /// <returns>Lazily evaluated list of entries</returns>
         static IEnumerable<string> GetTrackerEntries()
         {
             foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
@@ -455,6 +559,10 @@ namespace infinitas_statfetcher
                 yield return sb.ToString();
             }
         }
+        /// <summary>
+        /// Load tracker.db if exist, otherwise create. Add new songs not present in tracker.db before exiting
+        /// Will also merge any differences in the tracker.tsv provided the config option is set
+        /// </summary>
         public static void LoadTracker()
         {
             /* Initialize if tracker file don't exist */
@@ -511,6 +619,9 @@ namespace infinitas_statfetcher
             }
             SaveTracker();
         }
+        /// <summary>
+        /// Save tracker information to tracker.db for memory between executions
+        /// </summary>
         public static void SaveTracker()
         {
             try
@@ -527,6 +638,10 @@ namespace infinitas_statfetcher
                 Except(e);
             }
         }
+        /// <summary>
+        /// Compare data in currently loaded tracker info from tracker.db to what is described in tracker.tsv
+        /// </summary>
+        /// <returns>Dictionary with both tracker values present for any chart with differences</returns>
         public static Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>> GetTrackerDifferences()
         {
             Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>> result = new Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>>();
