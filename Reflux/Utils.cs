@@ -599,7 +599,7 @@ namespace infinitas_statfetcher
             {
                 StringBuilder sb = new StringBuilder();
                 StringBuilder db = new StringBuilder();
-                sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter");
+                sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count");
                 foreach (var entry in Utils.GetTrackerEntries())
                 {
                     sb.AppendLine(entry);
@@ -659,6 +659,8 @@ namespace infinitas_statfetcher
                         chartData.Append($"{songDb[songid].level[(int)chart.difficulty]}\t");
                         chartData.Append($"{trackerDb[chart].lamp}\t");
                         chartData.Append($"{trackerDb[chart].grade}\t");
+                        chartData.Append($"{trackerDb[chart].ex_score}\t");
+                        chartData.Append($"{trackerDb[chart].misscount}\t");
                     }
                 }
                 sb.Append(bitCostData);
