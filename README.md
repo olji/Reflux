@@ -12,7 +12,7 @@ It also dumps the database for chart unlocks.
 
 Some live streaming utilities are available as well, such as outputting current playing song and the play state tracking info to separate files for displaying on screen or automating behaviour.
 
-Play data is, depending on configuration, appended to a .tsv session file, a json file or sent to a URL running a server with the API used. (Or any combination of them)
+Play data is, depending on configuration, appended to a .tsv session file, a json file and/or sent to a URL running a [Reflux Server](https://github.com/olji/Reflux_Server) (Or homebrew with compatible API). 
 
 Memory offsets used to find the relevant information is stored in a file along with the build version it works with. On start the binary will probe the executable for build version by brute force and compare with what's listed in the offset file.
 If no match it will check for an applicable offset file on a configurable server.
