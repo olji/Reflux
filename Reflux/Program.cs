@@ -177,7 +177,7 @@ namespace infinitas_statfetcher
 
             Utils.GetUnlockStates();
             /* Check for new songs */
-            if (Config.Save_remote && !init)
+            if (Config.Save_remote)
             {
                 foreach (var song in Utils.songDb)
                 {
