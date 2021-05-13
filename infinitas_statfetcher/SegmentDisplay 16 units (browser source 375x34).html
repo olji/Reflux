@@ -1,0 +1,83 @@
+<!-- 
+Browser source should be 375x34
+
+LCD display by Rüdiger Appel - http://www.3quarks.com/en/SegmentDisplay 
+
+IIDX-style scrolling wrapper by dawndus, modified by Okapi
+-->
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SegmentDisplay</title>
+
+    <script type="text/javascript" src="segment-display.js"></script>
+    <script type="text/javascript">
+
+    function readTextFile(file)
+    {
+        var rawFile = new XMLHttpRequest();
+        var text = "BEATMANIA IIDX INFINITAS";
+        rawFile.open("GET", file, false);
+        rawFile.onreadystatechange = function ()
+        {
+            if(rawFile.readyState === 4)
+            {
+                if(rawFile.status === 200 || rawFile.status == 0)
+                {
+                  text = rawFile.responseText;
+                }
+            }
+        }
+        rawFile.send(null);
+        return text;
+    }
+
+      var currentText = "";
+      var displayText = "";
+
+      var display = new SegmentDisplay("display");
+      display.pattern         = "################";
+      display.displayAngle    = 5;
+      display.digitHeight     = 26;
+      display.digitWidth      = 16;
+      display.digitDistance   = 1.6;
+      display.segmentWidth    = 2.5;
+      display.segmentDistance = 0.3;
+      display.segmentCount    = 16;
+      display.cornerType      = 1;
+      display.colorOn         = "#ff2c0f";
+      display.colorOff        = "#1e100d";
+
+      updateText();
+      animate();
+
+      function updateText() {
+        var newText = "                       " + readTextFile('marquee.txt').replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+
+        if(currentText != newText) {
+          currentText = newText;
+          displayText = newText;
+        }
+        window.setTimeout('updateText()', 1000);
+      }
+
+      function animate() {
+        display.setValue(displayText);
+
+        displayText = displayText.substr(1);
+
+        if(displayText.length == 0){
+          displayText = currentText;
+        }
+
+        window.setTimeout('animate()', 200);
+      }
+
+
+
+    </script>   
+  </head>
+  <body style="background-color:black;">
+	<canvas id="display" width="375" height="34"></canvas>
+  </body>
+</html>
