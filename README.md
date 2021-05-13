@@ -1,7 +1,8 @@
-# infinitas_statfetcher
+# Reflux
 
-Probes memory for following information:  
-Per play:
+Probes INFINITAS memory and outputs all top scores into a tsv file.
+
+It also saves plays in sessions files with the following data:
 - Settings (RAN,LIFT,Autoscratch etc.)
 - Play results (Score, lamp, DJ level)
 - Judge data (Pgreat, misses, fast/slow)
@@ -18,5 +19,4 @@ If no match it will check for an applicable offset file on a configurable server
 This behaviour can be turned off if unwanted.
 
 # Todo
-- Auto-update encoding fixes-list
 - Keyboard hook for manual memdumps
