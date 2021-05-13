@@ -124,7 +124,7 @@ namespace infinitas_statfetcher
                 lamp = Utils.BytesToInt32(buffer, 48, 4)
             };
 
-            while (traveller.song > 999)
+            while (Utils.songDb.ContainsKey(traveller.song.ToString("D5")))
             {
                 var addr = traveller.next;
 
