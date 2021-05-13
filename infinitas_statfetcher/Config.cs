@@ -16,7 +16,6 @@ namespace infinitas_statfetcher
         public static bool Save_remote { get; private set; }
         public static bool Save_local { get; private set; }
         public static bool Save_json { get; private set; }
-        public static bool Merge_tracker_files { get; private set; }
         public static bool Stream_Playstate { get; private set; }
         public static bool Stream_Marquee { get; private set; }
         public static string MarqueeIdleText { get; private set; }
@@ -42,7 +41,6 @@ namespace infinitas_statfetcher
             Save_remote = ReadConfigBoolean("record:saveremote");
             Save_local = ReadConfigBoolean("record:savelocal");
             Save_json = ReadConfigBoolean("record:savejson");
-            Merge_tracker_files = ReadConfigBoolean("record:mergetrackerfiles");
 
             header.songInfo = ReadConfigBoolean("localrecord:songinfo");
             header.chartDetails = ReadConfigBoolean("localrecord:chartdetails");

@@ -6,3 +6,4 @@ playSettings = 0x14143B160
 unlockdata = 0x1415ECE80
 notesprogress = 0x1404B2240
 currentsong = 0x1415EA4F8
+datamap = 0x14212C3F8

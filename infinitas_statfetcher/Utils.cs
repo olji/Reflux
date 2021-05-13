@@ -68,6 +68,8 @@ namespace infinitas_statfetcher
     {
         public Grade grade;
         public Lamp lamp;
+        public int ex_score;
+        public int misscount;
     }
     /// <summary>
     /// Generic chart object for dictionary key lookup
@@ -119,6 +121,48 @@ namespace infinitas_statfetcher
         /// </summary>
         readonly static Dictionary<string, string> customTypes = new Dictionary<string, string>();
 
+        public static Grade ScoreToGrade(string songID, Difficulty difficulty, int exscore)
+        {
+            var maxEx = Utils.songDb[songID].totalNotes[(int)difficulty] * 2;
+            var exPart = (double)maxEx / 9;
+
+
+            if (exscore > exPart * 8)
+            {
+                return Grade.AAA;
+            }
+            else if (exscore > exPart * 7)
+            {
+                return Grade.AA;
+            }
+            else if (exscore > exPart * 6)
+            {
+                return Grade.A;
+            }
+            else if (exscore > exPart * 5)
+            {
+                return Grade.B;
+            }
+            else if (exscore > exPart * 4)
+            {
+                return Grade.C;
+            }
+            else if (exscore > exPart * 3)
+            {
+                return Grade.D;
+            }
+            else if (exscore > exPart * 2)
+            {
+                return Grade.E;
+            }
+            else if(exscore == 0)
+            {
+                return Grade.NP;
+            }
+            return Grade.F;
+
+
+        }
         /// <summary>
         /// Populate DB for encoding issues, tab separated since commas can appear in title
         /// </summary>
@@ -164,7 +208,7 @@ namespace infinitas_statfetcher
         {
             short word = 4;
 
-            var marker = ReadInt32(Offsets.JudgeData, word * 24, word);
+            var marker = ReadInt32(Offsets.JudgeData, word * 24);
             if (marker != 0)
             {
                 return GameState.playing;
@@ -172,7 +216,7 @@ namespace infinitas_statfetcher
 
             /* Cannot go from song select to result screen anyway */
             if(currentState == GameState.songSelect) { return currentState; }
-            marker = ReadInt32(Offsets.PlaySettings - word * 5, 0, word);
+            marker = ReadInt32(Offsets.PlaySettings - word * 5, 0);
             if (marker == 1)
             {
                 return GameState.songSelect;
@@ -237,13 +281,28 @@ namespace infinitas_statfetcher
         /// <param name="skip">Amount of bytes to skip before parsing</param>
         /// <param name="take">Amount of bytes to use for parsing</param>
         /// <returns></returns>
-        static Int32 BytesToInt32(byte[] input, int skip, int take)
+        public static Int32 BytesToInt32(byte[] input, int skip, int take = 4)
         {
             if (skip == 0)
             {
                 return BitConverter.ToInt32(input.Take(take).ToArray());
             }
             return BitConverter.ToInt32(input.Skip(skip).Take(take).ToArray());
+        }
+        /// <summary>
+        /// Util function to get an 64-bit integer from any section in a byte array
+        /// </summary>
+        /// <param name="input">Byte array to get value from</param>
+        /// <param name="skip">Amount of bytes to skip before parsing</param>
+        /// <param name="take">Amount of bytes to use for parsing</param>
+        /// <returns></returns>
+        public static Int64 BytesToInt64(byte[] input, int skip, int take = 8)
+        {
+            if (skip == 0)
+            {
+                return BitConverter.ToInt64(input.Take(take).ToArray());
+            }
+            return BitConverter.ToInt64(input.Skip(skip).Take(take).ToArray());
         }
         [Conditional("DEBUG")]
         public static void Debug(string msg)
@@ -257,8 +316,13 @@ namespace infinitas_statfetcher
         /// <param name="context"></param>
         public static void Except(Exception e, string context="")
         {
-            var stream = File.AppendText("crashlog");
+            var stream = File.AppendText("crashlog.txt");
             stream.WriteLine($"{(context == "" ? "Unhandled exception" : context )}: {e.Message}");
+        }
+        public static void Log(string message)
+        {
+            var stream = File.AppendText("log.txt");
+            stream.WriteLine(message);
         }
 
         #region Memory reading functions
@@ -271,8 +335,8 @@ namespace infinitas_statfetcher
             byte[] buffer = new byte[32];
             int nRead = 0;
             ReadProcessMemory((int)handle, Offsets.CurrentSong, buffer, buffer.Length, ref nRead);
-            int songid = BytesToInt32(buffer, 0, 4);
-            int diff = BytesToInt32(buffer, 4, 4);
+            int songid = BytesToInt32(buffer, 0);
+            int diff = BytesToInt32(buffer, 4);
             return new Chart() { songID = songid.ToString("D5"), difficulty = (Difficulty)diff };
         }
         /// <summary>
@@ -288,7 +352,7 @@ namespace infinitas_statfetcher
             var titleNoFilter = Encoding.GetEncoding("Shift-JIS").GetString(buffer);
             buffer = new byte[4];
             ReadProcessMemory((int)handle, Offsets.UnlockData, buffer, buffer.Length, ref nRead);
-            var id = Utils.BytesToInt32(buffer, 0, 4);
+            var id = Utils.BytesToInt32(buffer, 0);
             Debug($"Read string: \"{title}\" in start of song list, expecting \"5.1.1.\"");
             Debug($"Read number: {id} in start of unlock list, expecting 1000");
             return title.Contains("5.1.1.") && id == 1000;
@@ -300,14 +364,30 @@ namespace infinitas_statfetcher
         /// <param name="offset">Potential extra offset for readability instead of just adding to <paramref name="position"/></param>
         /// <param name="size">Amount of bytes to read and convert</param>
         /// <returns></returns>
-        public static Int32 ReadInt32(long position, int offset, int size)
+        public static Int32 ReadInt32(long position, int offset, int size = 4)
         {
             int bytesRead = 0;
 
             byte[] buffer = new byte[size];
 
             ReadProcessMemory((int) handle, position+offset, buffer, buffer.Length, ref bytesRead);
-            return Utils.BytesToInt32(buffer.Take(size).ToArray(), 0, size);
+            return Utils.BytesToInt32(buffer.Take(size).ToArray(), 0);
+        }
+        /// <summary>
+        /// Function to read any position in memory and convert to Int64
+        /// </summary>
+        /// <param name="position">Base offset in memory</param>
+        /// <param name="offset">Potential extra offset for readability instead of just adding to <paramref name="position"/></param>
+        /// <param name="size">Amount of bytes to read and convert</param>
+        /// <returns></returns>
+        public static Int64 ReadInt64(long position, int offset, int size = 8)
+        {
+            int bytesRead = 0;
+
+            byte[] buffer = new byte[size];
+
+            ReadProcessMemory((int) handle, position+offset, buffer, buffer.Length, ref bytesRead);
+            return Utils.BytesToInt64(buffer.Take(size).ToArray(), 0);
         }
         /// <summary>
         /// Fetch metadata for one song
@@ -326,7 +406,7 @@ namespace infinitas_statfetcher
 
             var title1 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Take(slab).Where(x => x != 0).ToArray());
 
-            if (Utils.BytesToInt32(buffer.Take(slab).ToArray(), 0, slab) == 0)
+            if (Utils.BytesToInt32(buffer.Take(slab).ToArray(), 0) == 0)
             {
                 return new SongInfo();
             }
@@ -336,13 +416,23 @@ namespace infinitas_statfetcher
             var artist = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(slab * 3).Take(slab).Where(x => x != 0).ToArray());
 
             var diff_section = buffer.Skip(slab * 4 + slab / 2).Take(10).ToArray();
-            var diff_levels = new int[] { Convert.ToInt32(diff_section[0]), Convert.ToInt32(diff_section[1]), Convert.ToInt32(diff_section[2]), Convert.ToInt32(diff_section[3]), Convert.ToInt32(diff_section[4]), Convert.ToInt32(diff_section[5]), Convert.ToInt32(diff_section[6]), Convert.ToInt32(diff_section[7]), Convert.ToInt32(diff_section[8]), Convert.ToInt32(diff_section[9]) };
+            var diff_levels = new int[] { 
+                Convert.ToInt32(diff_section[0]),
+                Convert.ToInt32(diff_section[1]),
+                Convert.ToInt32(diff_section[2]),
+                Convert.ToInt32(diff_section[3]),
+                Convert.ToInt32(diff_section[4]),
+                Convert.ToInt32(diff_section[5]),
+                Convert.ToInt32(diff_section[6]),
+                Convert.ToInt32(diff_section[7]),
+                Convert.ToInt32(diff_section[8]),
+                Convert.ToInt32(diff_section[9]) };
 
             var bpms = buffer.Skip(slab * 5).Take(8).ToArray();
             var noteCounts_bytes = buffer.Skip(slab * 6 + 48).Take(slab).ToArray();
 
-            var bpmMax = Utils.BytesToInt32(bpms, 0, word);
-            var bpmMin = Utils.BytesToInt32(bpms, word, word);
+            var bpmMax = Utils.BytesToInt32(bpms, 0);
+            var bpmMin = Utils.BytesToInt32(bpms, word);
 
             string bpm = "NA";
             if (bpmMin != 0)
@@ -354,7 +444,18 @@ namespace infinitas_statfetcher
                 bpm = bpmMax.ToString("000");
             }
 
-            var noteCounts = new int[] { Utils.BytesToInt32(noteCounts_bytes, 0, word), Utils.BytesToInt32(noteCounts_bytes, word, word), Utils.BytesToInt32(noteCounts_bytes, word * 2, word), Utils.BytesToInt32(noteCounts_bytes, word * 3, word), Utils.BytesToInt32(noteCounts_bytes, word * 4, word), Utils.BytesToInt32(noteCounts_bytes, word * 5, word), Utils.BytesToInt32(noteCounts_bytes, word * 6, word), Utils.BytesToInt32(noteCounts_bytes, word * 7, word), Utils.BytesToInt32(noteCounts_bytes, word * 8, word), Utils.BytesToInt32(noteCounts_bytes, word * 9, word) };
+            var noteCounts = new int[] { 
+                Utils.BytesToInt32(noteCounts_bytes, 0),
+                Utils.BytesToInt32(noteCounts_bytes, word),
+                Utils.BytesToInt32(noteCounts_bytes, word * 2),
+                Utils.BytesToInt32(noteCounts_bytes, word * 3),
+                Utils.BytesToInt32(noteCounts_bytes, word * 4),
+                Utils.BytesToInt32(noteCounts_bytes, word * 5),
+                Utils.BytesToInt32(noteCounts_bytes, word * 6),
+                Utils.BytesToInt32(noteCounts_bytes, word * 7),
+                Utils.BytesToInt32(noteCounts_bytes, word * 8),
+                Utils.BytesToInt32(noteCounts_bytes, word * 9) 
+            };
 
 
             var idarray = buffer.Skip(256 + 368).Take(4).ToArray();
@@ -390,7 +491,11 @@ namespace infinitas_statfetcher
             var changes = new Dictionary<string, UnlockData>();
             foreach(var key in unlockDb.Keys)
             {
-                if(unlockDb[key].unlocks != oldUnlocks[key].unlocks)
+                if (!oldUnlocks.ContainsKey(key)) {
+                    Log($"Key {key} was not present in past unlocks array"); 
+                    continue;
+                }
+                if (unlockDb[key].unlocks != oldUnlocks[key].unlocks)
                 {
                     UnlockData value = unlockDb[key];
                     changes.Add(key, value);
@@ -442,7 +547,10 @@ namespace infinitas_statfetcher
             while(position < buf.Length)
             {
                 var sData = buf.Skip(position).Take(structSize).ToArray();
-                UnlockData data = new UnlockData { songID = BytesToInt32(sData, 0, 4), type = (unlockType)BytesToInt32(sData, 4, 4), unlocks = BytesToInt32(sData, 8, 4) };
+                UnlockData data = new UnlockData { 
+                    songID = BytesToInt32(sData, 0),
+                    type = (unlockType)BytesToInt32(sData, 4),
+                    unlocks = BytesToInt32(sData, 8) };
                 string id = data.songID.ToString("D5");
                 if(id == "00000") /* Take into account where songDb is populated with unreleased songs */
                 {
@@ -560,19 +668,20 @@ namespace infinitas_statfetcher
             }
         }
         /// <summary>
-        /// Load tracker.db if exist, otherwise create. Add new songs not present in tracker.db before exiting
-        /// Will also merge any differences in the tracker.tsv provided the config option is set
+        /// If saving to remote, load tracker.db if exist, otherwise create, populate potential new songs with data from score data hash map
+        /// When not saving to remote, just generate the tracker info from INFINITAS internal hash map
         /// </summary>
         public static void LoadTracker()
         {
             /* Initialize if tracker file don't exist */
-            if (File.Exists("tracker.db"))
+            if (Config.Save_remote && File.Exists("tracker.db"))
             {
-                try {
+                try
+                {
                     foreach (var line in File.ReadAllLines("tracker.db"))
                     {
                         var segments = line.Split(',');
-                        trackerDb.Add(new Chart() { songID = segments[0], difficulty = (Difficulty)Enum.Parse(typeof(Difficulty), segments[1]) }, new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]), lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]) });
+                        trackerDb.Add(new Chart() { songID = segments[0], difficulty = (Difficulty)Enum.Parse(typeof(Difficulty), segments[1]) }, new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]), lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]), ex_score = int.Parse(segments[4]), misscount = int.Parse(segments[5]) });
                     }
                 }
                 catch (Exception e)
@@ -585,36 +694,19 @@ namespace infinitas_statfetcher
             {
                 for (int i = 0; i < song.Value.level.Length; i++)
                 {
-                    /* Skip beginner difficulties */
-                    if (i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
                     /* Skip charts with no difficulty rating */
                     if (song.Value.level[i] == 0) { continue; }
 
                     var c = new Chart() { songID = song.Key, difficulty = (Difficulty)i };
 
                     if (!trackerDb.ContainsKey(c)) {
-                        trackerDb.Add(c, new TrackerInfo() { grade = 0, lamp = 0 });
+                        trackerDb.Add(c, new TrackerInfo() { 
+                            lamp = ScoreMap.Scores[song.Key].lamp[i], 
+                            grade = ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]),
+                            ex_score = ScoreMap.Scores[song.Key].score[i],
+                            misscount = ScoreMap.Scores[song.Key].misscount[i] 
+                        });
                     }
-                }
-            }
-            if (Config.Merge_tracker_files)
-            {
-                var diffs = GetTrackerDifferences();
-                if (diffs.Count > 0)
-                {
-                    /* Replace data in tracker.db with whatever's higher, the value already in tracker.db or what was read from tracker.tsv */
-                    foreach (var pair in diffs)
-                    {
-                        var entry = trackerDb[pair.Key];
-                        var oldgrade = entry.grade;
-                        var oldlamp = entry.lamp;
-                        entry.grade = (Grade)Math.Max((int)pair.Value.Item1.grade, (int)pair.Value.Item2.grade);
-                        entry.lamp = (Lamp)Math.Max((int)pair.Value.Item1.lamp, (int)pair.Value.Item2.lamp);
-                        trackerDb[pair.Key] = entry;
-                        Debug($"Changing {songDb[pair.Key.songID].title} {pair.Key.difficulty} grade from {oldgrade} to {entry.grade}");
-                        Debug($"Changing {songDb[pair.Key.songID].title} {pair.Key.difficulty} lamp from {oldlamp} to {entry.lamp}");
-                    }
-                    File.Copy("tracker.db", $"archive/tracker_{DateTime.Now.ToString("yyyymmdd")}.db");
                 }
             }
             SaveTracker();
@@ -624,52 +716,23 @@ namespace infinitas_statfetcher
         /// </summary>
         public static void SaveTracker()
         {
-            try
+            if (Config.Save_remote)
             {
-                List<string> entries = new List<string>();
-                foreach (var entry in trackerDb)
+                try
                 {
-                    entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp}");
-                }
-                Debug("Saving tracker.db");
-                File.WriteAllLines("tracker.db", entries.ToArray());
-            } catch (Exception e)
-            {
-                Except(e);
-            }
-        }
-        /// <summary>
-        /// Compare data in currently loaded tracker info from tracker.db to what is described in tracker.tsv
-        /// </summary>
-        /// <returns>Dictionary with both tracker values present for any chart with differences</returns>
-        public static Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>> GetTrackerDifferences()
-        {
-            Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>> result = new Dictionary<Chart, Tuple<TrackerInfo, TrackerInfo>>();
-            if (!File.Exists("tracker.tsv")) { return result; }
-
-            foreach(var line in File.ReadAllLines("tracker.tsv"))
-            {
-                var sections = line.Split('\t');
-                if(sections[0].ToLower() == "title") { continue; }
-                var songid = songDb.Where(x => x.Value.title == sections[0]).First().Key;
-
-                for(int i = 0; i < 6; i++)
-                {
-                    /* -1 to adjust for one-indexing of difficulty section to avoid multiplication of 0 */
-                    int diffInfoIndex = 6 + (i * 4);
-                    /* Offset i for difficulty enum, different offsets for SP and DP */
-                    Difficulty diff = (Difficulty)(i < 3 ? i + 1 : i + 3);
-                    if(songDb[songid].level[(int)diff] == 0) { continue; }
-                    Chart chart = new Chart() { songID = songid, difficulty = diff };
-                    Lamp lamp = (Lamp)Enum.Parse(typeof(Lamp), sections[diffInfoIndex + 2]);
-                    Grade grade = (Grade)Enum.Parse(typeof(Grade), sections[diffInfoIndex + 3]);
-                    if(lamp != trackerDb[chart].lamp || grade != trackerDb[chart].grade)
+                    List<string> entries = new List<string>();
+                    foreach (var entry in trackerDb)
                     {
-                        result.Add(chart, new Tuple<TrackerInfo, TrackerInfo>(trackerDb[chart], new TrackerInfo() { grade = grade, lamp = lamp }));
+                        entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp},{entry.Value.ex_score},{entry.Value.misscount}");
                     }
+                    Debug("Saving tracker.db");
+                    File.WriteAllLines("tracker.db", entries.ToArray());
+                }
+                catch (Exception e)
+                {
+                    Except(e);
                 }
             }
-            return result;
         }
         #endregion
     }

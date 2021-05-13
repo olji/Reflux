@@ -201,6 +201,7 @@ namespace infinitas_statfetcher
                 }
             }
 
+            ScoreMap.LoadMap();
             if (Config.Save_local)
             {
                 Utils.LoadTracker();

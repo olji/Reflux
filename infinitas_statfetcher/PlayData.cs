@@ -66,10 +66,10 @@ namespace infinitas_statfetcher
             Difficulty difficulty = 0;
             try
             {
-                var song = Utils.ReadInt32(Offsets.PlayData, 0, word);
-                difficulty = (Difficulty)Utils.ReadInt32(Offsets.PlayData, word, word);
-                clearLamp = (Lamp)Utils.ReadInt32(Offsets.PlayData, word * 6, word);
-                gauge = Utils.ReadInt32(Offsets.PlayData, word * 8, word);
+                var song = Utils.ReadInt32(Offsets.PlayData, 0);
+                difficulty = (Difficulty)Utils.ReadInt32(Offsets.PlayData, word);
+                clearLamp = (Lamp)Utils.ReadInt32(Offsets.PlayData, word * 6);
+                gauge = Utils.ReadInt32(Offsets.PlayData, word * 8);
 
                 songID = song.ToString("00000");
                 chart = FetchChartInfo(Utils.songDb[songID], difficulty);
@@ -91,44 +91,9 @@ namespace infinitas_statfetcher
                 clearLamp = Lamp.PFC;
             }
 
-            var maxEx = Utils.songDb[songID].totalNotes[(int)difficulty] * 2;
-            var exPart = (double)maxEx / 9;
-
             var exscore = (judges.pgreat * 2 + judges.great);
-            ex = exscore;
 
-            if (exscore > exPart * 8)
-            {
-                grade = Grade.AAA;
-            }
-            else if (exscore > exPart * 7)
-            {
-                grade = Grade.AA;
-            }
-            else if (exscore > exPart * 6)
-            {
-                grade = Grade.A;
-            }
-            else if (exscore > exPart * 5)
-            {
-                grade = Grade.B;
-            }
-            else if (exscore > exPart * 4)
-            {
-                grade = Grade.C;
-            }
-            else if (exscore > exPart * 3)
-            {
-                grade = Grade.D;
-            }
-            else if (exscore > exPart * 2)
-            {
-                grade = Grade.E;
-            }
-            else
-            {
-                grade = Grade.F;
-            }
+            grade = Utils.ScoreToGrade(songID, difficulty, exscore);
 
         }
         /// <summary>

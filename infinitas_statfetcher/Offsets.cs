@@ -14,6 +14,10 @@ namespace infinitas_statfetcher
         /// </summary>
         public static long SongList { get; private set; }
         /// <summary>
+        /// Location of the pointers to the hashmap for player top score data
+        /// </summary>
+        public static long DataMap { get; private set; }
+        /// <summary>
         /// Location of judge data
         /// </summary>
         public static long JudgeData {get; private set; }
@@ -56,6 +60,7 @@ namespace infinitas_statfetcher
                     case "playdata": PlayData = offset; break;
                     case "songlist": SongList = offset; break;
                     case "unlockdata": UnlockData = offset; break;
+                    case "datamap": DataMap = offset; break;
                     case "playsettings": PlaySettings = offset; break;
                     case "currentsong": CurrentSong = offset; break;
                 }
