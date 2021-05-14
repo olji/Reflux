@@ -305,7 +305,7 @@ namespace infinitas_statfetcher
                         Utils.Debug("Saving tracker data tsv");
                         Utils.SaveTrackerData("tracker.tsv");
                     }
-                    if (newUnlocks.Count > 0)
+                    if (Config.Save_remote && newUnlocks.Count > 0)
                     {
                         Network.ReportUnlocks(newUnlocks);
                     }
