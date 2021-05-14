@@ -134,6 +134,7 @@ namespace infinitas_statfetcher
                 { "bpm", chart.bpm },
                 { "artist", chart.artist },
                 { "genre", chart.genre },
+                { "unlockType", Utils.unlockDb[chart.songid].type.ToString() },
                 { "notecount", chart.totalNotes.ToString() },
                 { "diff", chart.difficulty.ToString() },
                 { "level", chart.level.ToString() },
