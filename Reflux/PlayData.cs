@@ -25,7 +25,7 @@ namespace infinitas_statfetcher
         readonly Settings settings;
         ChartInfo chart;
         int gauge;
-        int ex;
+        int exscore;
         string songID;
         Grade grade;
         Lamp clearLamp;
@@ -91,7 +91,7 @@ namespace infinitas_statfetcher
                 clearLamp = Lamp.PFC;
             }
 
-            var exscore = (judges.pgreat * 2 + judges.great);
+            exscore = (judges.pgreat * 2 + judges.great);
 
             grade = Utils.ScoreToGrade(songID, difficulty, exscore);
 
@@ -141,7 +141,7 @@ namespace infinitas_statfetcher
                 { "grade", grade.ToString() },
                 { "gaugepercent", gauge.ToString() },
                 { "lamp", clearLamp.ToString() },
-                { "exscore", ex.ToString() },
+                { "exscore", exscore.ToString() },
                 { "prematureend", judges.prematureEnd.ToString().ToLower() },
                 { "pgreat", judges.pgreat.ToString() },
                 { "great", judges.great.ToString() },
@@ -170,7 +170,7 @@ namespace infinitas_statfetcher
             kamaiTask.Wait();
             var kamaiID = kamaiTask.Result;
             JObject json = new JObject();
-            json["score"] = ex;
+            json["score"] = exscore;
             json["lamp"] = expandLamp(clearLamp);
             if (kamaiID == null)
             {
@@ -220,7 +220,7 @@ namespace infinitas_statfetcher
             sb.Append($"\t{judges.playtype}\t{grade}\t{clearLamp}\t{(MissCountValid ? (judges.poor+judges.bad).ToString() : "-")}");
             if (Config.HeaderConfig.resultDetails)
             {
-                sb.Append($"\t{gauge}\t{ex}");
+                sb.Append($"\t{gauge}\t{exscore}");
             }
             if (Config.HeaderConfig.judge)
             {
