@@ -151,6 +151,7 @@ namespace infinitas_statfetcher
                     songlistFetched = true;
                 }
             }
+            Console.WriteLine("Song list loaded.");
             File.Create(sessionFile.FullName).Close();
             WriteLine(sessionFile, Config.GetTsvHeader());
             if (Config.Save_json)
@@ -176,11 +177,29 @@ namespace infinitas_statfetcher
             }
 
             Utils.GetUnlockStates();
-            /* Check for new songs */
+
+            Console.WriteLine("Fetching song scoring data...");
+            ScoreMap.LoadMap();
+            if (Config.Save_local)
+            {
+                Utils.LoadTracker();
+            }
+
+            /* Sync with server */
             if (Config.Save_remote)
             {
+                Console.WriteLine("Checking for songs/charts to update at remote.");
+                int songcount = Utils.songDb.Where(song => !unlock_db.ContainsKey(song.Key)).Count();
+                Console.WriteLine($"Found {songcount} songs to upload to remote");
+
+                int i = 0;
                 foreach (var song in Utils.songDb)
                 {
+                    if (songcount > 0)
+                    {
+                        double percent = ((double)i) / songcount * 100;
+                        Console.Write($"\rProgress: {percent.ToString("0.##")}%   ");
+                    }
                     if (!unlock_db.ContainsKey(song.Key) || init)
                     {
                         Network.UploadSongInfo(song.Key);
@@ -194,17 +213,11 @@ namespace infinitas_statfetcher
                         if (unlock_db[song.Key].Item2 != Utils.unlockDb[song.Key].unlocks)
                         {
                             Network.ReportUnlock(song.Key, Utils.unlockDb[song.Key]);
-                            Thread.Sleep(40);
                         }
                     }
-                    Thread.Sleep(10);
+                    i++;
                 }
-            }
-
-            ScoreMap.LoadMap();
-            if (Config.Save_local)
-            {
-                Utils.LoadTracker();
+                Console.WriteLine("\rDone            ");
             }
 
 

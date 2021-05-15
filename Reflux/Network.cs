@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 
 namespace infinitas_statfetcher
 {
@@ -170,7 +171,7 @@ namespace infinitas_statfetcher
         /// Add a new song at remote
         /// </summary>
         /// <param name="song">Song metadata</param>
-        static async void AddSong(SongInfo song)
+        static HttpStatusCode AddSong(SongInfo song)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
@@ -184,14 +185,17 @@ namespace infinitas_statfetcher
                     { "bpm", song.bpm}
                 }
             );
-            var response = await client.PostAsync(Config.Server + "/api/addsong", content);
-            Utils.Debug(await response.Content.ReadAsStringAsync());
+            var response = client.PostAsync(Config.Server + "/api/addsong", content);
+            response.Wait();
+            Utils.Debug(response.Result.Content.ReadAsStringAsync().Result);
+            return response.Result.StatusCode;
         }
         /// <summary>
         /// Add a new chart for a song at remote
         /// </summary>
         /// <param name="chart">Metadata for one chart difficulty</param>
-        static async void AddChart(ChartInfo chart)
+        /// <returns>Server response</returns>
+        static HttpStatusCode AddChart(ChartInfo chart)
         {
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
@@ -203,9 +207,35 @@ namespace infinitas_statfetcher
                     { "notecount", chart.totalNotes.ToString()}
                 }
             );
-            var response = await client.PostAsync(Config.Server + "/api/addchart", content);
-            Utils.Debug(await response.Content.ReadAsStringAsync());
-
+            var response = client.PostAsync(Config.Server + "/api/addchart", content);
+            Utils.Debug(response.Result.Content.ReadAsStringAsync().Result);
+            return response.Result.StatusCode;
+        }
+        /// <summary>
+        /// Post score to remote
+        /// </summary>
+        /// <param name="chart">Chart information</param>
+        /// <param name="exscore">Ex score</param>
+        /// <param name="misscount">Miss count</param>
+        /// <param name="lamp">Clear state</param>
+        /// <returns></returns>
+        static HttpStatusCode PostScore(ChartInfo chart, int exscore, int misscount, Lamp lamp)
+        {
+            var grade = Utils.ScoreToGrade(chart.songid, chart.difficulty, exscore);
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+                {
+                    { "apikey", Config.API_key },
+                    { "songid", chart.songid },
+                    { "diff", chart.difficulty.ToString()},
+                    { "exscore", exscore.ToString()},
+                    { "misscount", misscount.ToString()},
+                    { "grade", grade.ToString()},
+                    { "lamp", lamp.ToString()}
+                }
+            );
+            var response = client.PostAsync(Config.Server + "/api/postscore", content);
+            Utils.Debug(response.Result.Content.ReadAsStringAsync().Result);
+            return response.Result.StatusCode;
         }
         /// <summary>
         /// Upload new song and chart data to remote
@@ -215,15 +245,19 @@ namespace infinitas_statfetcher
         {
             var song = Utils.songDb[songid];
 
-            Utils.Debug($"Song {songid}");
+            //Utils.Debug($"Song {songid}");
 
-            AddSong(song);
+            HttpStatusCode response = HttpStatusCode.InternalServerError;
+            do
+            {
+                response = AddSong(song);
+            } while (response != HttpStatusCode.OK);
 
             for (int i = 0; i < song.level.Length; i++)
             {
                 if (i == 0 || i == 5 || song.level[i] == 0) { continue; }
 
-                Thread.Sleep(10);
+                Thread.Sleep(20);
                 try
                 {
                     ChartInfo chart = new ChartInfo()
@@ -235,11 +269,19 @@ namespace infinitas_statfetcher
                         unlocked = Utils.GetUnlockStateForDifficulty(songid, (Difficulty)i)
                     };
 
-                    AddChart(chart);
+                    do
+                    {
+                        response = AddChart(chart);
+                    } while (response != HttpStatusCode.OK);
+
+                    do
+                    {
+                        response = PostScore( chart, ScoreMap.Scores[songid].score[i], ScoreMap.Scores[songid].misscount[i], ScoreMap.Scores[songid].lamp[i]);
+                    } while (response != HttpStatusCode.OK);
                 }
                 catch
                 {
-
+                    Utils.Log($"Server issues when adding {songid}[{i}]");
                 }
 
             }
