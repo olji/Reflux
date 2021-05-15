@@ -638,13 +638,16 @@ namespace infinitas_statfetcher
                     /* Skip beginner and leggendaria */
                     if(i == (int)Difficulty.SPB || i == (int)Difficulty.SPL || i == (int)Difficulty.DPB || i == (int)Difficulty.DPL) { continue; }
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
+                    /* Handle columns for missing charts */
                     if (!trackerDb.ContainsKey(chart))
                     {
                         if (i < (int)Difficulty.DPB)
                         {
+                            /* Add tab for bit cost */
                             bitCostData.Append($"\t");
                         }
-                        chartData.Append("\t\t\t\t");
+                        /* Add tabs for data columns below */
+                        chartData.Append("\t\t\t\t\t\t");
                     }
                     else
                     {
