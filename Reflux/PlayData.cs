@@ -36,6 +36,8 @@ namespace infinitas_statfetcher
         public ChartInfo Chart { get { return chart; } }
         public Grade Grade { get { return grade; } }
         public Lamp Lamp { get { return clearLamp; } }
+        public int MissCount { get { return judges.bad + judges.poor; } }
+        public int ExScore { get { return exscore; } }
         /// <summary>
         /// Play ended prematurely (Quit or failed HC/EXH)
         /// </summary>
@@ -86,7 +88,7 @@ namespace infinitas_statfetcher
                 DataAvailable = false;
             }
 
-            if (judges.PFC)
+            if (judges.PFC && clearLamp == Lamp.FC)
             {
                 clearLamp = Lamp.PFC;
             }
