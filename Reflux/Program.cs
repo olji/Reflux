@@ -24,6 +24,25 @@ namespace infinitas_statfetcher
 
         static void Main()
         {
+            var assemblyInfo = System.Reflection.Assembly.GetExecutingAssembly().GetName();
+            var version = assemblyInfo.Version.ToString(3);
+            Console.WriteLine(assemblyInfo.Name + " " + version);
+            var netVersion = Network.GetLatestVersion();
+            var segments = version.Split('.');
+            for(int i = 0; i < segments.Length; i++)
+            {
+                var netSegments = netVersion.Split('.');
+                if (netSegments.Length <= i)
+                {
+                    break;
+                }
+                if (int.Parse(segments[i]) < int.Parse(netSegments[i]))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Newer version {netVersion} is available.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+            }
             Process process = null;
             Config.Parse("config.ini");
 

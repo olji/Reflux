@@ -17,6 +17,13 @@ namespace infinitas_statfetcher
     class Network
     {
         readonly static HttpClient client = new HttpClient();
+        public static string GetLatestVersion()
+        {
+            var req = WebRequest.Create("https://github.com/olji/Reflux/releases/latest");
+            req.Method = "HEAD";
+            var response = req.GetResponse() as HttpWebResponse;
+            return response.ResponseUri.Segments.Last();
+        }
         /// <summary>
         /// Fetch file content of target and return
         /// </summary>
