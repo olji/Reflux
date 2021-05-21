@@ -155,10 +155,6 @@ namespace infinitas_statfetcher
             {
                 return Grade.E;
             }
-            else if(exscore == 0)
-            {
-                return Grade.NP;
-            }
             return Grade.F;
 
 
@@ -316,13 +312,13 @@ namespace infinitas_statfetcher
         /// <param name="context"></param>
         public static void Except(Exception e, string context="")
         {
-            var stream = File.AppendText("crashlog.txt");
-            stream.WriteLine($"{(context == "" ? "Unhandled exception" : context )}: {e.Message}");
+            var stream = File.AppendText("log.txt");
+            stream.WriteLine($"{DateTime.Now}[ERR]: {(context == "" ? "Unhandled exception" : context )}: {e.Message}\n#### STACKTRACE\n{e.StackTrace}\n####");
         }
         public static void Log(string message)
         {
             var stream = File.AppendText("log.txt");
-            stream.WriteLine(message);
+            stream.WriteLine($"{DateTime.Now}[INFO]: {message}");
         }
 
         #region Memory reading functions
@@ -679,7 +675,7 @@ namespace infinitas_statfetcher
         public static void LoadTracker()
         {
             /* Initialize if tracker file don't exist */
-            if (Config.Save_remote && File.Exists("tracker.db"))
+            if (File.Exists("tracker.db"))
             {
                 try
                 {
@@ -711,6 +707,13 @@ namespace infinitas_statfetcher
                             ex_score = ScoreMap.Scores[song.Key].score[i],
                             misscount = ScoreMap.Scores[song.Key].misscount[i] 
                         });
+                    } else
+                    {
+                        var entry = trackerDb[c];
+                        entry.ex_score = Math.Max(ScoreMap.Scores[song.Key].score[i], entry.ex_score);
+                        entry.lamp = (Lamp)Math.Max((int)ScoreMap.Scores[song.Key].lamp[i], (int)entry.lamp);
+                        entry.grade = (Grade)Math.Max((int)ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]), (int)entry.grade);
+                        entry.misscount = Math.Min(ScoreMap.Scores[song.Key].misscount[i], entry.misscount);
                     }
                 }
             }
@@ -721,22 +724,19 @@ namespace infinitas_statfetcher
         /// </summary>
         public static void SaveTracker()
         {
-            if (Config.Save_remote)
+            try
             {
-                try
+                List<string> entries = new List<string>();
+                foreach (var entry in trackerDb)
                 {
-                    List<string> entries = new List<string>();
-                    foreach (var entry in trackerDb)
-                    {
-                        entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp},{entry.Value.ex_score},{entry.Value.misscount}");
-                    }
-                    Debug("Saving tracker.db");
-                    File.WriteAllLines("tracker.db", entries.ToArray());
+                    entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp},{entry.Value.ex_score},{entry.Value.misscount}");
                 }
-                catch (Exception e)
-                {
-                    Except(e);
-                }
+                Debug("Saving tracker.db");
+                File.WriteAllLines("tracker.db", entries.ToArray());
+            }
+            catch (Exception e)
+            {
+                Except(e);
             }
         }
         #endregion
