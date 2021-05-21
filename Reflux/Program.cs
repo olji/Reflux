@@ -24,6 +24,7 @@ namespace infinitas_statfetcher
 
         static void Main()
         {
+            /* Compare segments of current version and latest release tag and notify if newer version is available */
             var assemblyInfo = System.Reflection.Assembly.GetExecutingAssembly().GetName();
             var version = assemblyInfo.Version.ToString(3);
             Console.WriteLine(assemblyInfo.Name + " " + version);
@@ -41,6 +42,7 @@ namespace infinitas_statfetcher
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Newer version {netVersion} is available.");
                     Console.ForegroundColor = ConsoleColor.White;
+                    break;
                 }
             }
             Process process = null;
