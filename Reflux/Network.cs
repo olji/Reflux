@@ -299,6 +299,8 @@ namespace infinitas_statfetcher
             bool songFound = false, giveup = false;
             int included_sections = 0;
             int? songID = null;
+            bool iterativeSearch = false;
+            int iterations = 0;
             /* If nothing matches the alternative title, split on spaces and append one section at a time, since it's generally strange spacing that's the issue */
             do
             {
@@ -310,12 +312,13 @@ namespace infinitas_statfetcher
                     songFound = true;
                     songID = (int)json["body"][0]["id"];
                 }
-                else if (json["description"].ToString().Contains("Found 0"))
+                else if (!iterativeSearch && json["description"].ToString().Contains("Found 0"))
                 {
                     if (search != alterativeTitle)
                     {
                         giveup = true;
                     }
+                    iterativeSearch = true;
                     search = alterativeTitle.Split(' ')[0];
                     included_sections = 1;
                 }
@@ -331,7 +334,8 @@ namespace infinitas_statfetcher
                         giveup = true;
                     }
                 }
-            } while (!songFound && !giveup);
+                iterations++;
+            } while (iterations < 10 && !songFound && !giveup);
             return songID;
         }
     }
