@@ -17,3 +17,5 @@ Play data is, depending on configuration, appended to a .tsv session file, a jso
 Memory offsets used to find the relevant information is stored in a file along with the build version it works with. On start the binary will probe the executable for build version by brute force and compare with what's listed in the offset file.
 If no match it will check for an applicable offset file on a configurable server.
 This behaviour can be turned off if unwanted.
+
+TSV Spreadsheet (make your own copy): https://docs.google.com/spreadsheets/d/1GAKBEYmMFcNl8vlT0wod1rZ60uw_E5tubBVms28mZqc/edit?usp=sharing
