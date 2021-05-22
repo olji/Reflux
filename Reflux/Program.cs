@@ -24,30 +24,11 @@ namespace infinitas_statfetcher
 
         static void Main()
         {
-            /* Compare segments of current version and latest release tag and notify if newer version is available */
-            var assemblyInfo = System.Reflection.Assembly.GetExecutingAssembly().GetName();
-            var version = assemblyInfo.Version.ToString(3);
-            Console.WriteLine(assemblyInfo.Name + " " + version);
-            var netVersion = Network.GetLatestVersion();
-            var segments = version.Split('.');
-            for(int i = 0; i < segments.Length; i++)
-            {
-                var netSegments = netVersion.Split('.');
-                if (netSegments.Length <= i)
-                {
-                    break;
-                }
-                if (int.Parse(segments[i]) < int.Parse(netSegments[i]))
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Newer version {netVersion} is available.");
-                    Console.ForegroundColor = ConsoleColor.White;
-                    break;
-                }
-            }
+            Utils.CheckVersion();
             Process process = null;
             Config.Parse("config.ini");
 
+            #region Parse unlockdb file
             Dictionary<string, Tuple<int, int>> unlock_db = new Dictionary<string, Tuple<int, int>>();
             bool init = false;
             if (Config.Save_remote)
@@ -66,8 +47,10 @@ namespace infinitas_statfetcher
                     Console.WriteLine("unlockdb not found, will initialize all songs on remote server");
                 }
             }
+            #endregion
 
-            
+            #region Set up session and json file naming
+
             DateTime now = DateTime.Now;
 
             CultureInfo culture = CultureInfo.CreateSpecificCulture("en-us");
@@ -84,7 +67,9 @@ namespace infinitas_statfetcher
             }
             var sessionFile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.tsv"));
             var jsonfile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.json"));
+            #endregion
 
+            #region Repeadedly attempt hooking to application
             do
             {
                 Console.WriteLine("Trying to hook to INFINITAS...");
@@ -161,6 +146,8 @@ namespace infinitas_statfetcher
                 }
                 #endregion
 
+                #region Wait until data is properly loaded
+
                 bool songlistFetched = false;
                 while (!songlistFetched)
                 {
@@ -177,9 +164,19 @@ namespace infinitas_statfetcher
                         songlistFetched = true;
                     }
                 }
+
+                #endregion
+
                 Console.WriteLine("Song list loaded.");
-                File.Create(sessionFile.FullName).Close();
-                WriteLine(sessionFile, Config.GetTsvHeader());
+
+                #region Create session and json file if configured to track those
+
+                if (Config.Save_local)
+                {
+                    File.Create(sessionFile.FullName).Close();
+                    WriteLine(sessionFile, Config.GetTsvHeader());
+                }
+
                 if (Config.Save_json)
                 {
                     JObject head = new JObject();
@@ -190,6 +187,8 @@ namespace infinitas_statfetcher
                     json["body"] = new JArray();
                     File.WriteAllText(jsonfile.FullName, json.ToString());
                 }
+
+                #endregion
 
                 /* Primarily for debugging and checking for encoding issues */
                 if (Config.Output_songlist)
@@ -208,7 +207,8 @@ namespace infinitas_statfetcher
                 ScoreMap.LoadMap();
                 Utils.LoadTracker();
 
-                /* Sync with server */
+                #region Sync with server
+
                 if (Config.Save_remote)
                 {
                     Console.WriteLine("Checking for songs/charts to update at remote.");
@@ -223,10 +223,12 @@ namespace infinitas_statfetcher
                             double percent = ((double)i) / songcount * 100;
                             Console.Write($"\rProgress: {percent.ToString("0.##")}%   ");
                         }
+                        /* Upload new songs */
                         if (!unlock_db.ContainsKey(song.Key) || init)
                         {
                             Network.UploadSongInfo(song.Key);
                         }
+                        /* Upload changes to song (unlock type and unlock status) */
                         if (unlock_db.ContainsKey(song.Key))
                         {
                             if (unlock_db[song.Key].Item1 != (int)Utils.unlockDb[song.Key].type)
@@ -243,14 +245,21 @@ namespace infinitas_statfetcher
                     Console.WriteLine("\rDone            ");
                 }
 
+                #endregion
+
 
                 GameState state = GameState.songSelect;
 
                 Console.WriteLine("Initialized and ready");
 
                 string chart = "";
-                Utils.Debug("Updating marquee.txt");
-                File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
+
+                if (Config.Stream_Marquee)
+                {
+                    Utils.Debug("Updating marquee.txt");
+                    File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
+                }
+
                 if (Config.Stream_Playstate)
                 {
                     Utils.Debug("Writing initial menu state to playstate.txt");
@@ -387,6 +396,7 @@ namespace infinitas_statfetcher
                     File.WriteAllText("marquee.txt", "NO SIGNAL");
                 }
             } while (true);
+            #endregion
         }
 
         /// <summary>
