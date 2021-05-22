@@ -314,11 +314,15 @@ namespace infinitas_statfetcher
         {
             var stream = File.AppendText("log.txt");
             stream.WriteLine($"{DateTime.Now}[ERR]: {(context == "" ? "Unhandled exception" : context )}: {e.Message}\n#### STACKTRACE\n{e.StackTrace}\n####");
+            stream.Flush();
+            stream.Close();
         }
         public static void Log(string message)
         {
             var stream = File.AppendText("log.txt");
             stream.WriteLine($"{DateTime.Now}[INFO]: {message}");
+            stream.Flush();
+            stream.Close();
         }
 
         #region Memory reading functions
