@@ -25,7 +25,6 @@ namespace infinitas_statfetcher
         static void Main()
         {
             Utils.CheckVersion();
-            Process process = null;
             Config.Parse("config.ini");
 
             #region Parse unlockdb file
@@ -72,6 +71,7 @@ namespace infinitas_statfetcher
             #region Repeadedly attempt hooking to application
             do
             {
+                Process process = null;
                 Console.WriteLine("Trying to hook to INFINITAS...");
                 do
                 {
@@ -149,9 +149,23 @@ namespace infinitas_statfetcher
                 #region Wait until data is properly loaded
 
                 bool songlistFetched = false;
+                bool processExit = false;
                 while (!songlistFetched)
                 {
-                    while (!Utils.DataLoaded()) { Thread.Sleep(5000); } /* Don't fetch song list until it seems loaded */
+                    /* Don't fetch song list until it seems loaded */
+                    while (!Utils.DataLoaded()) { 
+                        Thread.Sleep(5000);
+                        if (process.HasExited)
+                        {
+                            processExit = true;
+                            break;
+                        }
+                    } 
+                    if (process.HasExited || processExit)
+                    {
+                        processExit = true;
+                        break;
+                    }
                     Thread.Sleep(1000); /* Extra sleep just to avoid potentially undiscovered race conditions */
                     Utils.FetchSongDataBase();
                     if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
@@ -163,6 +177,10 @@ namespace infinitas_statfetcher
                     {
                         songlistFetched = true;
                     }
+                }
+                if (processExit)
+                {
+                    continue;
                 }
 
                 #endregion
