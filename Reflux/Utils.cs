@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     public enum Difficulty { 
         SPB = 0,

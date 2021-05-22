@@ -12,7 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     class Network
     {

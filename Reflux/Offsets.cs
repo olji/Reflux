@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     static class Offsets
     {

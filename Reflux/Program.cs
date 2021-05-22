@@ -11,7 +11,7 @@ using System.Globalization;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     class Program
     {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Ini;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     static class Config
     {

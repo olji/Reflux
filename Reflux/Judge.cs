@@ -1,4 +1,4 @@
-﻿namespace infinitas_statfetcher
+﻿namespace Reflux
 {
     class Judge
     {

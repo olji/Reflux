@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json.Linq;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     struct ChartInfo
     {

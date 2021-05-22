@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 
-namespace infinitas_statfetcher
+namespace Reflux
 {
     class ScoreMap
     {
