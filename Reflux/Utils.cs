@@ -599,7 +599,7 @@ namespace Reflux
             {
                 StringBuilder sb = new StringBuilder();
                 StringBuilder db = new StringBuilder();
-                sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count");
+                sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count");
                 foreach (var entry in Utils.GetTrackerEntries())
                 {
                     sb.AppendLine(entry);
@@ -647,7 +647,7 @@ namespace Reflux
                             bitCostData.Append($"\t");
                         }
                         /* Add tabs for data columns below */
-                        chartData.Append("\t\t\t\t\t\t");
+                        chartData.Append("\t\t\t\t\t\t\t");
                     }
                     else
                     {
@@ -663,7 +663,8 @@ namespace Reflux
                         chartData.Append($"{trackerDb[chart].lamp}\t");
                         chartData.Append($"{trackerDb[chart].grade}\t");
                         chartData.Append($"{trackerDb[chart].ex_score}\t");
-                        chartData.Append($"{trackerDb[chart].misscount}\t");
+                        chartData.Append($"{trackerDb[chart].misscount}\t"); 
+                        chartData.Append($"{songDb[songid].totalNotes[(int)chart.difficulty]}\t");
                     }
                 }
                 sb.Append(bitCostData);
