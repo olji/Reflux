@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -68,6 +67,7 @@ namespace Reflux
     {
         public Grade grade;
         public Lamp lamp;
+        public decimal DJPoints;
         public int ex_score;
         public int misscount;
     }
@@ -109,17 +109,13 @@ namespace Reflux
         /// </summary>
         public static Dictionary<string, SongInfo> songDb = new Dictionary<string, SongInfo>();
         /// <summary>
-        /// DB for keeping track of PBs on different charts
-        /// </summary>
-        public static Dictionary<Chart, TrackerInfo> trackerDb = new Dictionary<Chart, TrackerInfo>();
-        /// <summary>
         /// DB of known encoding issues or inconsistencies to how they're generally known
         /// </summary>
         readonly static Dictionary<string, string> knownEncodingIssues = new Dictionary<string, string>();
         /// <summary>
         /// DB of custom types of unlocks, to separate DJP unlocks from bit unlocks and song pack unlocks from subscription songs
         /// </summary>
-        readonly static Dictionary<string, string> customTypes = new Dictionary<string, string>();
+        public readonly static Dictionary<string, string> customTypes = new Dictionary<string, string>();
 
         public static Grade ScoreToGrade(string songID, Difficulty difficulty, int exscore)
         {
@@ -588,164 +584,11 @@ namespace Reflux
         #endregion
 
         #region Tracker related
-        /// <summary>
-        /// Save tracker tsv and unlockdb, as they're somewhat interlinked due to the unlock information in both
-        /// </summary>
-        /// <param name="filename"></param>
-        public static void SaveTrackerData(string filename)
-        {
-
-            try
-            {
-                StringBuilder sb = new StringBuilder();
-                StringBuilder db = new StringBuilder();
-                sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tDPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count");
-                foreach (var entry in Utils.GetTrackerEntries())
-                {
-                    sb.AppendLine(entry);
-                }
-                File.WriteAllText(filename, sb.ToString());
-                if (Config.Save_remote)
-                {
-                    foreach (var song in unlockDb)
-                    {
-                        db.AppendLine($"{song.Key},{(int)song.Value.type},{song.Value.unlocks}");
-                    }
-                    File.WriteAllText("unlockdb", db.ToString());
-                }
-            } catch (Exception e)
-            {
-                Except(e);
-            }
-        }
-        /// <summary>
-        /// Get each song entry for the tracker TSV
-        /// </summary>
-        /// <returns>Lazily evaluated list of entries</returns>
-        static IEnumerable<string> GetTrackerEntries()
-        {
-            foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
-            {
-                var song = unlockDb[songid];
-                string identifier = customTypes.ContainsKey(songid) ? customTypes[songid] : song.type.ToString();
-
-                StringBuilder sb = new StringBuilder($"{songDb[songid].title}\t{song.type}\t{identifier}\t");
-
-                StringBuilder bitCostData = new StringBuilder();
-                StringBuilder chartData = new StringBuilder();
-                for(int i = 0; i < 10; i++)
-                {
-                    /* Skip beginner and leggendaria */
-                    if(i == (int)Difficulty.SPB || i == (int)Difficulty.SPL || i == (int)Difficulty.DPB || i == (int)Difficulty.DPL) { continue; }
-                    Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
-                    /* Handle columns for missing charts */
-                    if (!trackerDb.ContainsKey(chart))
-                    {
-                        if (i < (int)Difficulty.DPB)
-                        {
-                            /* Add tab for bit cost */
-                            bitCostData.Append($"\t");
-                        }
-                        /* Add tabs for data columns below */
-                        chartData.Append("\t\t\t\t\t\t\t");
-                    }
-                    else
-                    {
-                        bool unlockState = GetUnlockStateForDifficulty(songid, chart.difficulty);
-                        if (i < (int)Difficulty.DPB)
-                        {
-                            var levels = songDb[songid].level;
-                            int cost = (song.type == unlockType.Bits && !customTypes.ContainsKey(songid) ? 500 * (levels[(int)chart.difficulty] + levels[(int)chart.difficulty + (int)Difficulty.DPB]) : 0);
-                            bitCostData.Append($"{cost}\t");
-                        }
-                        chartData.Append($"{(unlockState ? "TRUE" : "FALSE")}\t");
-                        chartData.Append($"{songDb[songid].level[(int)chart.difficulty]}\t");
-                        chartData.Append($"{trackerDb[chart].lamp}\t");
-                        chartData.Append($"{trackerDb[chart].grade}\t");
-                        chartData.Append($"{trackerDb[chart].ex_score}\t");
-                        chartData.Append($"{trackerDb[chart].misscount}\t"); 
-                        chartData.Append($"{songDb[songid].totalNotes[(int)chart.difficulty]}\t");
-                    }
-                }
-                sb.Append(bitCostData);
-                sb.Append(chartData);
-
-                yield return sb.ToString();
-            }
-        }
-        /// <summary>
-        /// If saving to remote, load tracker.db if exist, otherwise create, populate potential new songs with data from score data hash map
-        /// When not saving to remote, just generate the tracker info from INFINITAS internal hash map
-        /// </summary>
-        public static void LoadTracker()
-        {
-            /* Initialize if tracker file don't exist */
-            if (File.Exists("tracker.db"))
-            {
-                try
-                {
-                    foreach (var line in File.ReadAllLines("tracker.db"))
-                    {
-                        var segments = line.Split(',');
-                        trackerDb.Add(new Chart() { songID = segments[0], difficulty = (Difficulty)Enum.Parse(typeof(Difficulty), segments[1]) }, new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]), lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]), ex_score = int.Parse(segments[4]), misscount = int.Parse(segments[5]) });
-                    }
-                }
-                catch (Exception e)
-                {
-                    Except(e);
-                }
-            }
-            /* Add any potentially new songs */
-            foreach (var song in songDb)
-            {
-                for (int i = 0; i < song.Value.level.Length; i++)
-                {
-                    /* Skip charts with no difficulty rating */
-                    if (song.Value.level[i] == 0) { continue; }
-
-                    var c = new Chart() { songID = song.Key, difficulty = (Difficulty)i };
-
-                    if (!trackerDb.ContainsKey(c)) {
-                        trackerDb.Add(c, new TrackerInfo() { 
-                            lamp = ScoreMap.Scores[song.Key].lamp[i], 
-                            grade = ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]),
-                            ex_score = ScoreMap.Scores[song.Key].score[i],
-                            misscount = ScoreMap.Scores[song.Key].misscount[i] 
-                        });
-                    } else
-                    {
-                        var entry = trackerDb[c];
-                        entry.ex_score = Math.Max(ScoreMap.Scores[song.Key].score[i], entry.ex_score);
-                        entry.lamp = (Lamp)Math.Max((int)ScoreMap.Scores[song.Key].lamp[i], (int)entry.lamp);
-                        entry.grade = (Grade)Math.Max((int)ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]), (int)entry.grade);
-                        entry.misscount = Math.Min(ScoreMap.Scores[song.Key].misscount[i], entry.misscount);
-                    }
-                }
-            }
-            SaveTracker();
-        }
-        /// <summary>
-        /// Save tracker information to tracker.db for memory between executions
-        /// </summary>
-        public static void SaveTracker()
-        {
-            try
-            {
-                List<string> entries = new List<string>();
-                foreach (var entry in trackerDb)
-                {
-                    entries.Add($"{entry.Key.songID},{entry.Key.difficulty},{entry.Value.grade},{entry.Value.lamp},{entry.Value.ex_score},{entry.Value.misscount}");
-                }
-                Debug("Saving tracker.db");
-                File.WriteAllLines("tracker.db", entries.ToArray());
-            }
-            catch (Exception e)
-            {
-                Except(e);
-            }
-        }
         #endregion
 
+        /// <summary>
+        /// Check if a newer release is available and notify user
+        /// </summary>
         public static void CheckVersion()
         {
             /* Compare segments of current version and latest release tag and notify if newer version is available */
@@ -769,6 +612,23 @@ namespace Reflux
                     break;
                 }
             }
+        }
+        /// <summary>
+        /// Calculate the DJ Points awarded for a given chart
+        /// </summary>
+        /// <param name="songID">SongID</param>
+        /// <param name="diff">Chart difficulty</param>
+        /// <param name="score">EX score of best play</param>
+        /// <param name="lamp">Best clear lamp</param>
+        /// <returns>DJ Points as a decimal value</returns>
+        public static decimal CalculateDJP(string songID, Difficulty diff, int score, Lamp lamp)
+        {
+            var grade = ScoreToGrade(songID, diff, score);
+            /* C gets a value of 10 starting from A, with +5 for each grade above that */
+            decimal C = (grade >= Grade.A ? 10 : 0) + Math.Max(0, grade - Grade.A) * 5;
+            /* L increases by 5 for each lamp above AC (AC being 0), with HC and better increasing the value further by an extra 5 */
+            decimal L = Math.Max(0, lamp - Lamp.AC) * 5 + (lamp >= Lamp.HC ? 5 : 0);
+            return score * (100 + C + L) / 10000;
         }
     }
 }

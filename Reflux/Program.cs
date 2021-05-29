@@ -223,7 +223,7 @@ namespace Reflux
 
                 Console.WriteLine("Fetching song scoring data...");
                 ScoreMap.LoadMap();
-                Utils.LoadTracker();
+                Tracker.LoadTracker();
 
                 #region Sync with server
 
@@ -311,13 +311,13 @@ namespace Reflux
                                         {
                                             /* Update best lamp/grade */
                                             Chart c = new Chart() { songID = latestData.Chart.songid, difficulty = latestData.Chart.difficulty };
-                                            var entry = Utils.trackerDb[c];
+                                            var entry = Tracker.trackerDb[c];
                                             entry.grade = (Grade)Math.Max((int)entry.grade, (int)latestData.Grade);
                                             entry.lamp = (Lamp)Math.Max((int)entry.lamp, (int)latestData.Lamp);
                                             entry.misscount = Math.Max((int)entry.misscount, (int)latestData.MissCount);
                                             entry.ex_score = Math.Max((int)entry.ex_score, (int)latestData.ExScore);
-                                            Utils.trackerDb[c] = entry;
-                                            Utils.SaveTracker();
+                                            Tracker.trackerDb[c] = entry;
+                                            Tracker.SaveTracker();
 
                                             WriteLine(sessionFile, latestData.GetTsvEntry());
                                         }
@@ -384,7 +384,7 @@ namespace Reflux
                             if (Config.Save_local)
                             {
                                 Utils.Debug("Saving tracker data tsv");
-                                Utils.SaveTrackerData("tracker.tsv");
+                                Tracker.SaveTrackerData("tracker.tsv");
                             }
                             if (Config.Save_remote && newUnlocks.Count > 0)
                             {
@@ -401,7 +401,7 @@ namespace Reflux
                 }
                 if (Config.Save_local)
                 {
-                    Utils.SaveTrackerData("tracker.tsv");
+                    Tracker.SaveTrackerData("tracker.tsv");
                 }
                 if (Config.Stream_Playstate)
                 {

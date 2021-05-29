@@ -31,7 +31,7 @@ namespace Reflux
             public Lamp[] lamp;
             public int[] score;
             public int[] misscount;
-
+            public decimal[] DJPoints;
         }
         static Dictionary<string, ListNode> nodes = new Dictionary<string, ListNode>();
         public static Dictionary<string, ScoreData> Scores { get; private set; }
@@ -92,7 +92,8 @@ namespace Reflux
                         songID = sections[0], 
                         score = new int[10],
                         misscount = new int[10],
-                        lamp = new Lamp[10]
+                        lamp = new Lamp[10],
+                        DJPoints = new decimal[10]
                     };
                     Scores.Add(sections[0], scoredata);
 
@@ -102,6 +103,7 @@ namespace Reflux
                 songScores.lamp[difficulty] = (Lamp)node.Value.lamp;
                 songScores.score[difficulty] = node.Value.score;
                 songScores.misscount[difficulty] = node.Value.misscount;
+                songScores.DJPoints[difficulty] = Utils.CalculateDJP(sections[0], (Difficulty)difficulty, node.Value.score, (Lamp)node.Value.lamp);
             }
         }
         static void FollowLinkedList(ListNode entrypoint)
