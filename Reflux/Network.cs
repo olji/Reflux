@@ -228,7 +228,7 @@ namespace Reflux
         /// <returns></returns>
         static HttpStatusCode PostScore(ChartInfo chart, int exscore, int misscount, Lamp lamp)
         {
-            var grade = Utils.ScoreToGrade(chart.songid, chart.difficulty, exscore);
+            var grade = (lamp == Lamp.NP && exscore == 0) ? Grade.NP : Utils.ScoreToGrade(chart.songid, chart.difficulty, exscore);
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
                     { "apikey", Config.API_key },

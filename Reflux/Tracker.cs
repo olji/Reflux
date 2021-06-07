@@ -181,7 +181,7 @@ namespace Reflux
                         trackerDb.Add(c, new TrackerInfo()
                         {
                             lamp = ScoreMap.Scores[song.Key].lamp[i],
-                            grade = Utils.ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]),
+                            grade = (ScoreMap.Scores[song.Key].lamp[i] == Lamp.NP && ScoreMap.Scores[song.Key].score[i] == 0) ? Grade.NP : Utils.ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]),
                             ex_score = ScoreMap.Scores[song.Key].score[i],
                             misscount = ScoreMap.Scores[song.Key].misscount[i],
                             DJPoints = ScoreMap.Scores[song.Key].DJPoints[i]
