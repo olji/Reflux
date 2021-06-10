@@ -30,7 +30,7 @@ namespace Reflux
                     "SPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tSPA DJ Points\t" +
                     "DPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPN DJ Points\t" +
                     "DPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPH DJ Points\t" +
-                    "DPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPH DJ Points");
+                    "DPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPA DJ Points");
                 foreach (var entry in GetTrackerEntries())
                 {
                     sb.AppendLine(entry);
