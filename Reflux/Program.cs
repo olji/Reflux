@@ -283,6 +283,15 @@ namespace Reflux
                     Utils.Debug("Writing initial menu state to playstate.txt");
                     File.WriteAllText("playstate.txt", "menu");
                 }
+
+                if (Config.Stream_FullSongInfo)
+                {
+                    File.WriteAllText("title.txt", String.Empty);
+                    File.WriteAllText("artist.txt", String.Empty);
+                    File.WriteAllText("englishtitle.txt", String.Empty);
+                    File.WriteAllText("genre.txt", String.Empty);
+                    File.WriteAllText("level.txt", String.Empty);
+                }
                 /* Main loop */
                 while (!process.HasExited)
                 {
@@ -335,6 +344,29 @@ namespace Reflux
                                         json["body"] = arr;
                                         File.WriteAllText(jsonfile.FullName, json.ToString());
                                     }
+                                    if (Config.Save_latestJson)
+                                    {
+                                        var entry = latestData.ToPostForm();
+                                        var json = JsonConvert.SerializeObject(entry);
+                                        File.WriteAllText("latest.json", json);
+                                    }
+                                    if (Config.Save_latestTxt)
+                                    {
+                                        File.WriteAllText("latest-grade.txt", latestData.Grade.ToString());
+                                        File.WriteAllText("latest-lamp.txt", latestData.expandLamp(latestData.Lamp));
+                                        File.WriteAllText("latest-difficulty.txt", latestData.Chart.difficulty.ToString());
+                                        File.WriteAllText("latest-difficulty-color.txt",
+
+                                            latestData.Chart.difficulty.ToString().EndsWith("N") ? "#0FABFD" :
+                                            latestData.Chart.difficulty.ToString().EndsWith("H") ? "#F4903C" :
+                                            latestData.Chart.difficulty.ToString().EndsWith("A") ? "#E52B19" :
+                                            "#0FABFD"
+                                            );
+
+                                        File.WriteAllText("latest-titleenglish.txt", latestData.Chart.title_english);
+
+                                        File.WriteAllText("latest.txt", latestData.Chart.title_english + Environment.NewLine + latestData.Grade.ToString() + Environment.NewLine + latestData.Lamp.ToString());
+                                    }
                                 }
                                 try
                                 {
@@ -356,10 +388,22 @@ namespace Reflux
                                     File.WriteAllText("marquee.txt", $"{chart} {clearstatus}");
                                 }
                             }
-                            else if (newstate == GameState.songSelect && Config.Stream_Marquee)
+                            else if (newstate == GameState.songSelect)
                             {
-                                Utils.Debug("Updating marquee.txt");
-                                File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
+                                if (Config.Stream_Marquee)
+                                {
+                                    Utils.Debug("Updating marquee.txt");
+                                    File.WriteAllText("marquee.txt", Config.MarqueeIdleText);
+                                }
+
+                                if (Config.Stream_FullSongInfo)
+                                {
+                                    File.WriteAllText("title.txt", String.Empty);
+                                    File.WriteAllText("artist.txt", String.Empty);
+                                    File.WriteAllText("englishtitle.txt", String.Empty);
+                                    File.WriteAllText("genre.txt", String.Empty);
+                                    File.WriteAllText("level.txt", String.Empty);
+                                }
                             }
                             else
                             {
@@ -373,6 +417,16 @@ namespace Reflux
                                     chart = Utils.CurrentChart();
                                     Utils.Debug($"Writing {chart} to marquee.txt");
                                     File.WriteAllText("marquee.txt", chart.ToUpper());
+
+                                }
+                                if (Config.Stream_FullSongInfo)
+                                {
+                                    var song = Utils.songDb[Utils.FetchCurrentChart().songID];
+                                    File.WriteAllText("title.txt", song.title);
+                                    File.WriteAllText("artist.txt", song.artist);
+                                    File.WriteAllText("englishtitle.txt", song.title_english);
+                                    File.WriteAllText("genre.txt", song.genre);
+                                    File.WriteAllText("level.txt", song.level.ToString());
                                 }
                             }
                         }
