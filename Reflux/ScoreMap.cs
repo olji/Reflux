@@ -63,6 +63,7 @@ namespace Reflux
             buffer = new byte[64];
             foreach (var entrypoint in llist_startpoints)
             {
+                if(entrypoint == nullobj) { continue; }
                 ReadProcessMemory((int)Utils.handle, entrypoint, buffer, buffer.Length, ref nRead);
                 ListNode entry = new ListNode() {
                     next = Utils.BytesToInt64(buffer, 0, 8), 
@@ -111,20 +112,7 @@ namespace Reflux
             var buffer = new byte[64];
             int nRead = 0;
 
-            ReadProcessMemory((int)Utils.handle, entrypoint.next, buffer, buffer.Length, ref nRead);
-            var traveller = new ListNode() { 
-                next = Utils.BytesToInt64(buffer, 0, 8), 
-                prev = Utils.BytesToInt64(buffer, 8, 8), 
-                diff = Utils.BytesToInt32(buffer, 16, 4), 
-                song = Utils.BytesToInt32(buffer, 20, 4), 
-                playtype = Utils.BytesToInt32(buffer, 24, 4), 
-                uk2 = Utils.BytesToInt32(buffer, 28, 4), 
-                score = Utils.BytesToInt32(buffer, 32, 4), 
-                misscount = Utils.BytesToInt32(buffer, 36, 4), 
-                uk3 = Utils.BytesToInt32(buffer, 40, 4), 
-                uk4 = Utils.BytesToInt32(buffer, 44, 4), 
-                lamp = Utils.BytesToInt32(buffer, 48, 4)
-            };
+            var traveller = entrypoint;
 
             while (Utils.songDb.ContainsKey(traveller.song.ToString("D5")))
             {
@@ -156,6 +144,5 @@ namespace Reflux
                 };
             }
         }
-        //enum direction { forward, backward };
     }
 }
