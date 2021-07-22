@@ -192,6 +192,7 @@ namespace Reflux
                         /* Only overwrite lamp and grade, as those are the only with potential custom values */
                         entry.lamp = (Lamp)Math.Max((int)ScoreMap.Scores[song.Key].lamp[i], (int)entry.lamp);
                         entry.grade = (Grade)Math.Max((int)Utils.ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]), (int)entry.grade);
+                        trackerDb[c] = entry;
                     }
                 }
             }
