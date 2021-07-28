@@ -57,6 +57,7 @@ namespace Reflux
         {
             foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
             {
+                if (!Utils.unlockDb.ContainsKey(songid)) { continue; }
                 var song = Utils.unlockDb[songid];
                 string identifier = Utils.customTypes.ContainsKey(songid) ? Utils.customTypes[songid] : song.type.ToString();
 
