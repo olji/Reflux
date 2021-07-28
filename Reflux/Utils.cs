@@ -310,6 +310,7 @@ namespace Reflux
         {
             var stream = File.AppendText("log.txt");
             stream.WriteLine($"{DateTime.Now}[ERR]: {(context == "" ? "Unhandled exception" : context )}: {e.Message}\n#### STACKTRACE\n{e.StackTrace}\n####");
+            Console.WriteLine("[ERR]: " + e.Message);
             stream.Flush();
             stream.Close();
         }
