@@ -18,4 +18,4 @@ Memory offsets used to find the relevant information is stored in a file along w
 If no match it will check for an applicable offset file on a configurable server.
 This behaviour can be turned off if unwanted.
 
-TSV Spreadsheet (make your own copy): https://docs.google.com/spreadsheets/d/1GAKBEYmMFcNl8vlT0wod1rZ60uw_E5tubBVms28mZqc/edit?usp=sharing
+TSV Spreadsheet (make your own copy): https://docs.google.com/spreadsheets/d/1tdfgyFXNBXtG718uPyliD0fmk9b_bzkWpPk6DwHcBd0/edit?usp=sharing
