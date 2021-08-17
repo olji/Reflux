@@ -126,7 +126,7 @@ namespace Reflux
                         chartData.Append($"{trackerDb[chart].lamp}\t");
                         chartData.Append($"{trackerDb[chart].grade}\t");
                         chartData.Append($"{trackerDb[chart].ex_score}\t");
-                        chartData.Append($"{trackerDb[chart].misscount}\t");
+                        chartData.Append($"{((int)trackerDb[chart].misscount == -1 ? "-" : trackerDb[chart].misscount.ToString())}\t");
                         chartData.Append($"{Utils.songDb[songid].totalNotes[(int)chart.difficulty]}\t");
                         chartData.Append(djp_str);
                     }
