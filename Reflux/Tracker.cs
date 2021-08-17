@@ -159,7 +159,7 @@ namespace Reflux
                             new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]),
                                 lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]),
                                 ex_score = int.Parse(segments[4]),
-                                misscount = int.Parse(segments[5]),
+                                misscount = uint.Parse(segments[5]),
                                 });
                     }
                 }

@@ -36,7 +36,7 @@ namespace Reflux
         public ChartInfo Chart { get { return chart; } }
         public Grade Grade { get { return grade; } }
         public Lamp Lamp { get { return clearLamp; } }
-        public int MissCount { get { return judges.bad + judges.poor; } }
+        public uint MissCount { get { return (uint)(judges.bad + judges.poor); } }
         public int ExScore { get { return exscore; } }
         /// <summary>
         /// Play ended prematurely (Quit or failed HC/EXH)
