@@ -291,6 +291,7 @@ namespace Reflux
                     File.WriteAllText("englishtitle.txt", String.Empty);
                     File.WriteAllText("genre.txt", String.Empty);
                     File.WriteAllText("level.txt", String.Empty);
+                    File.WriteAllText("playstate.txt", "menu"); // force menu switch here due to a bug
                 }
                 /* Main loop */
                 while (!process.HasExited)
@@ -403,6 +404,7 @@ namespace Reflux
                                     File.WriteAllText("englishtitle.txt", String.Empty);
                                     File.WriteAllText("genre.txt", String.Empty);
                                     File.WriteAllText("level.txt", String.Empty);
+                                    File.WriteAllText("playstate.txt", "menu"); // force menu switch here due to a bug
                                 }
                             }
                             else
