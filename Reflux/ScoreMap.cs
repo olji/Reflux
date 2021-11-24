@@ -19,7 +19,7 @@ namespace Reflux
             public int playtype;
             public int uk2;
             public int score;
-            public int misscount;
+            public uint misscount;
             public int uk3;
             public int uk4;
             public int lamp;
@@ -30,7 +30,7 @@ namespace Reflux
             public string songID;
             public Lamp[] lamp;
             public int[] score;
-            public int[] misscount;
+            public uint[] misscount;
             public decimal[] DJPoints;
         }
         static Dictionary<string, ListNode> nodes = new Dictionary<string, ListNode>();
@@ -73,7 +73,7 @@ namespace Reflux
                     playtype = Utils.BytesToInt32(buffer, 24, 4), 
                     uk2 = Utils.BytesToInt32(buffer, 28, 4), 
                     score = Utils.BytesToInt32(buffer, 32, 4), 
-                    misscount = Utils.BytesToInt32(buffer, 36, 4), 
+                    misscount = (uint)Utils.BytesToInt32(buffer, 36, 4), 
                     uk3 = Utils.BytesToInt32(buffer, 40, 4), 
                     uk4 = Utils.BytesToInt32(buffer, 44, 4), 
                     lamp = Utils.BytesToInt32(buffer, 48, 4)
@@ -92,7 +92,7 @@ namespace Reflux
                     var scoredata = new ScoreData() { 
                         songID = sections[0], 
                         score = new int[10],
-                        misscount = new int[10],
+                        misscount = new uint[10],
                         lamp = new Lamp[10],
                         DJPoints = new decimal[10]
                     };
@@ -137,7 +137,7 @@ namespace Reflux
                     playtype = Utils.BytesToInt32(buffer, 24, 4),
                     uk2 = Utils.BytesToInt32(buffer, 28, 4),
                     score = Utils.BytesToInt32(buffer, 32, 4),
-                    misscount = Utils.BytesToInt32(buffer, 36, 4),
+                    misscount = (uint)Utils.BytesToInt32(buffer, 36, 4),
                     uk3 = Utils.BytesToInt32(buffer, 40, 4),
                     uk4 = Utils.BytesToInt32(buffer, 44, 4),
                     lamp = Utils.BytesToInt32(buffer, 48, 4)

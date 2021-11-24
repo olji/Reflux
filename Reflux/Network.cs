@@ -226,7 +226,7 @@ namespace Reflux
         /// <param name="misscount">Miss count</param>
         /// <param name="lamp">Clear state</param>
         /// <returns></returns>
-        static HttpStatusCode PostScore(ChartInfo chart, int exscore, int misscount, Lamp lamp)
+        static HttpStatusCode PostScore(ChartInfo chart, int exscore, uint misscount, Lamp lamp)
         {
             var grade = (lamp == Lamp.NP && exscore == 0) ? Grade.NP : Utils.ScoreToGrade(chart.songid, chart.difficulty, exscore);
             var content = new FormUrlEncodedContent(new Dictionary<string, string>()
