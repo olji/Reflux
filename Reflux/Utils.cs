@@ -69,7 +69,7 @@ namespace Reflux
         public Lamp lamp;
         public decimal DJPoints;
         public int ex_score;
-        public int misscount;
+        public uint misscount;
     }
     /// <summary>
     /// Generic chart object for dictionary key lookup

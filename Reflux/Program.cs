@@ -324,8 +324,8 @@ namespace Reflux
                                             var entry = Tracker.trackerDb[c];
                                             entry.grade = (Grade)Math.Max((int)entry.grade, (int)latestData.Grade);
                                             entry.lamp = (Lamp)Math.Max((int)entry.lamp, (int)latestData.Lamp);
-                                            entry.misscount = Math.Max((int)entry.misscount, (int)latestData.MissCount);
-                                            entry.ex_score = Math.Max((int)entry.ex_score, (int)latestData.ExScore);
+                                            entry.misscount = Math.Min(entry.misscount, latestData.MissCount);
+                                            entry.ex_score = Math.Max(entry.ex_score, latestData.ExScore);
                                             Tracker.trackerDb[c] = entry;
                                             Tracker.SaveTracker();
 

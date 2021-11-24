@@ -126,7 +126,7 @@ namespace Reflux
                         chartData.Append($"{trackerDb[chart].lamp}\t");
                         chartData.Append($"{trackerDb[chart].grade}\t");
                         chartData.Append($"{trackerDb[chart].ex_score}\t");
-                        chartData.Append($"{trackerDb[chart].misscount}\t");
+                        chartData.Append($"{((int)trackerDb[chart].misscount == -1 ? "-" : trackerDb[chart].misscount.ToString())}\t");
                         chartData.Append($"{Utils.songDb[songid].totalNotes[(int)chart.difficulty]}\t");
                         chartData.Append(djp_str);
                     }
@@ -159,7 +159,7 @@ namespace Reflux
                             new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]),
                                 lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]),
                                 ex_score = int.Parse(segments[4]),
-                                misscount = int.Parse(segments[5]),
+                                misscount = uint.Parse(segments[5]),
                                 });
                     }
                 }
@@ -193,6 +193,9 @@ namespace Reflux
                         /* Only overwrite lamp and grade, as those are the only with potential custom values */
                         entry.lamp = (Lamp)Math.Max((int)ScoreMap.Scores[song.Key].lamp[i], (int)entry.lamp);
                         entry.grade = (Grade)Math.Max((int)Utils.ScoreToGrade(song.Key, (Difficulty)i, ScoreMap.Scores[song.Key].score[i]), (int)entry.grade);
+                        entry.misscount = ScoreMap.Scores[song.Key].misscount[i];
+                        entry.ex_score = ScoreMap.Scores[song.Key].score[i];
+                        entry.DJPoints = ScoreMap.Scores[song.Key].DJPoints[i];
                         trackerDb[c] = entry;
                     }
                 }
