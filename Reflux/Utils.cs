@@ -59,6 +59,7 @@ namespace Reflux
         public unlockType type;
         public string genre;
         public string bpm;
+        public int folder;
     }
     /// <summary>
     /// Information saved to the local tracker file
@@ -412,6 +413,9 @@ namespace Reflux
             var genre = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(slab * 2).Take(slab).Where(x => x != 0).ToArray());
             var artist = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(slab * 3).Take(slab).Where(x => x != 0).ToArray());
 
+            var folderBytes = buffer.Skip(slab * 4).Skip(24).Take(1).ToList();
+            var folder = BitConverter.ToInt32(new byte[] { folderBytes[0], 0, 0, 0 });
+
             var diff_section = buffer.Skip(slab * 4 + slab / 2).Take(10).ToArray();
             var diff_levels = new int[] { 
                 Convert.ToInt32(diff_section[0]),
@@ -468,7 +472,8 @@ namespace Reflux
                 artist = artist,
                 bpm = bpm,
                 totalNotes = noteCounts,
-                level = diff_levels
+                level = diff_levels,
+                folder = folder
             };
 
             return song;

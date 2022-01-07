@@ -365,7 +365,6 @@ namespace Reflux
                                             );
 
                                         File.WriteAllText("latest-titleenglish.txt", latestData.Chart.title_english);
-
                                         File.WriteAllText("latest.txt", latestData.Chart.title_english + Environment.NewLine + latestData.Grade.ToString() + Environment.NewLine + latestData.Lamp.ToString());
                                     }
                                 }
@@ -404,6 +403,7 @@ namespace Reflux
                                     File.WriteAllText("englishtitle.txt", String.Empty);
                                     File.WriteAllText("genre.txt", String.Empty);
                                     File.WriteAllText("level.txt", String.Empty);
+                                    File.WriteAllText("folder.txt", "-");
                                     File.WriteAllText("playstate.txt", "menu"); // force menu switch here due to a bug
                                 }
                             }
@@ -428,6 +428,7 @@ namespace Reflux
                                     File.WriteAllText("artist.txt", song.artist);
                                     File.WriteAllText("englishtitle.txt", song.title_english);
                                     File.WriteAllText("genre.txt", song.genre);
+                                    File.WriteAllText("folder.txt", song.folder.ToString());
                                     File.WriteAllText("level.txt", song.level.ToString());
                                 }
                             }
