@@ -258,7 +258,7 @@ namespace Reflux
         /// </summary>
         /// <param name="lamp"></param>
         /// <returns></returns>
-        string expandLamp(Lamp lamp)
+        public string expandLamp(Lamp lamp)
         {
             switch (lamp)
             {
