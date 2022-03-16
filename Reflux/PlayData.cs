@@ -169,22 +169,11 @@ namespace Reflux
         /// <returns></returns>
         public JObject GetJsonEntry()
         {
-            var kamaiTask = Network.Kamai_GetSongID(chart.title_english);
-            kamaiTask.Wait();
-            var kamaiID = kamaiTask.Result;
             JObject json = new JObject();
             json["score"] = exscore;
             json["lamp"] = expandLamp(clearLamp);
-            if (kamaiID == null)
-            {
-                json["matchType"] = "title";
-                json["identifier"] = chart.title;
-            }
-            else
-            {
-                json["matchType"] = "songID";
-                json["identifier"] = kamaiID;
-            }
+            json["matchType"] = "title";
+            json["identifier"] = chart.title;
             json["playtype"] = chart.difficulty.ToString().Substring(0, 2);
             json["difficulty"] = expandDifficulty(chart.difficulty.ToString().Substring(2, 1));
             json["timeAchieved"] = new DateTimeOffset(timestamp).ToUnixTimeMilliseconds();
