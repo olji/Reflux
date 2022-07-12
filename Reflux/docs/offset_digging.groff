@@ -1,0 +1,98 @@
+\" Compile with ms macros in case it's not clear from the macro usage
+.TL 
+Reflux offset finding guide
+
+.NH 1
+SongList
+
+.PP
+Search for string "5.1.1.", you should end up with 2 matches in static memory, use the top one.
+.NH 1
+PlaySettings
+
+.PP
+Use a group search command. The values are just indices of the list of options, so OFF is 0, RAN is 1, MIRROR is 2 etc. It follows the settings from left to right, except for FLIP which shows up between the Assist and Range options. Refer to Settings.cs::Fetch() for a programmatical example.
+
+.LP
+So on SP with RAN and Lift&SUD+, the offset would be found using the following groupscan command:
+.PP
+"4:1 4:0 4:0 4:0 4:5"
+.NH 1
+UnlockData
+
+.PP
+Search for any songID as a 4-byte integer, preferably not 1000 or similar as that'll give many matches. In Heaven (20016) is a good song to look for. Refer to earlier songDB output to see each song's ID.
+
+.LP
+When searching for the ID, you should end up in a place that looks similar to this (20016 used as search term): 
+
+.PP
+20016 | 3 | 462
+
+.LP
+462 in that result will be 0 if you have not bought song pack 3.
+
+.LP
+This kind of entry follows the following format:
+(SongID | unlock type | Unlock state)
+Where unlock type is 1 for a base song (unlocked from the start), 2 means a bit unlock, and 3 means a hidden unlock (Either sub song or song pack).
+Unlock state is a a series of bits for each chart for the song, following SPB, SPN, SPH, SPA, SPL, DPB etc. starting from LSB.
+
+.LP
+When you've found this, scroll up to where it starts (Should be 1000 | 1 | 462, you could alternatively search for group "4:1000 4:1 4:462", unless it gives other results as well), right click on 1000 -> Goto address, the address showing is what's needed.
+.NH 1
+The rest of the three can be done together by playing a chart, hitting a few notes and quitting out to result screen
+.NH 2
+JudgeData
+.PP Search grouped data, substituting the judge labels with the value you see on the result screen:
+
+.PP
+"4:pgreats 4:greats 4:good 4:bad 4:poor"
+
+.LP
+Hopefully you should end up with one result in static memory, that's what's needed.
+.NH 2
+PlayData
+
+.PP
+"4:songID 4:difficulty 4:ex"
+
+.LP
+difficulty being 0-9, following the pattern SPB = 0, SPN = 1, SPH, SPA, SPL, DPB etc.
+
+.LP
+As an example, In Heaven SPH with 375 ex would be:
+
+.PP
+"4:20016 4:2 4:375"
+
+.LP
+It should be unique enough, otherwise just add the miss count behind ex like so:
+
+.PP
+"4:20016 4:2 4:375 4:37"
+.NH 2
+CurrentSong
+
+.PP
+SongID followed by difficulty, using the above play as an example:
+
+.PP
+"4:20016 4:2"
+
+.LP
+Make sure you're not picking the playdata offset again.
+.NH 1
+ScoreMap
+
+.PP
+Infinitas keeps both start and stop of the hashmap, as well as the hash mip size close together in static memory.
+.LP
+Search for 8 byte hex value: 
+.I 3FFF
+.LP
+You should get only one match in static memory, the addresses should look like this when aligned as 8-byte HEX values:
+.PP
+START STOP STOP SIZE
+.LP
+Size being what we searched for. Save the address for that. 
