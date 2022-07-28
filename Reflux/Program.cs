@@ -121,12 +121,12 @@ namespace Reflux
                 {
                     if (Config.UpdateFiles)
                     {
-                        Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version}), querying server for correct version");
+                        Console.WriteLine($"The datecodes of Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.  An update is available.\nUpdating...");
                         correctVersion = Network.UpdateOffset(foundVersion);
                     }
                     else
                     {
-                        Console.WriteLine($"Version in binary ({foundVersion}) don't match offset file ({Offsets.Version})");
+                        Console.WriteLine($"The datecodes of Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.  An update is not currently available.\n \nThis is normal after an Infinitas update, and fixed as soon as we are made aware.\n \nPlease ping Okapi or another dev for assistance.") ;
                     }
                 }
                 else
@@ -140,7 +140,7 @@ namespace Reflux
 
                 if (!correctVersion)
                 {
-                    Console.WriteLine("Application will now exit");
+                    Console.WriteLine("Reflux will now exit.");
                     Console.ReadLine();
                     return;
                 }
