@@ -121,7 +121,7 @@ namespace Reflux
                 {
                     if (Config.UpdateFiles)
                     {
-                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nAn update is available.\nUpdating...");
+                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nAn update is available.  Updating...");
                         correctVersion = Network.UpdateOffset(foundVersion);
                     }
                     else
