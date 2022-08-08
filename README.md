@@ -18,4 +18,4 @@ Memory offsets used to find the relevant information is stored in a file along w
 If no match it will check for an applicable offset file on a configurable server.
 This behaviour can be turned off if unwanted.
 
-TSV Spreadsheet (make your own copy): https://docs.google.com/spreadsheets/d/1knAd_M_YMCYxc174y-3M_6EQNGsT2HpUKLQQjE_qhYs/edit?usp=sharing
+Full compatibility with Okapi's Unlock Tracker Spreadsheet (make your own copy): https://docs.google.com/spreadsheets/d/1knAd_M_YMCYxc174y-3M_6EQNGsT2HpUKLQQjE_qhYs/edit?usp=sharing
