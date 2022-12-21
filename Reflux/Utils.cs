@@ -93,6 +93,11 @@ namespace Reflux
         public Int32 songID;
         public unlockType type;
         public Int32 unlocks;
+        public Int32 unknown1;
+        public Int32 unknown2;
+        public Int32 unknown3;
+        public Int32 unknown4;
+        public Int32 unknown5;
     };
     class Utils
     {
