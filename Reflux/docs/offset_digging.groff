@@ -95,4 +95,4 @@ You should get only one match in static memory, the addresses should look like t
 .PP
 START STOP STOP SIZE
 .LP
-Size being what we searched for. Save the address for that. 
+SIZE being what we searched for. Save the address for START. 
