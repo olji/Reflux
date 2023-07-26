@@ -25,14 +25,14 @@ namespace Reflux
                 StringBuilder sb = new StringBuilder();
                 StringBuilder db = new StringBuilder();
                 sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSP DJ Points\tDP DJ Points\t" +
-                    "SPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPN DJ Points\t" +
-                    "SPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPH DJ Points\t" +
-                    "SPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tSPA DJ Points\t" +
-                    "SPL\tSPL Rating\tSPL Lamp\tSPL Letter\tSPL EX Score\tSPL Miss Count\tSPL Note Count\tSPL DJ Points\t" +
-                    "DPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPN DJ Points\t" +
-                    "DPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPH DJ Points\t" +
-                    "DPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPA DJ Points\t" +
-                    "DPL\tDPL Rating\tDPL Lamp\tDPL Letter\tDPL EX Score\tDPL Miss Count\tDPL Note Count\tDLP DJ Points");
+                    "SPN Unlocked\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPN DJ Points\t" +
+                    "SPH Unlocked\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPH DJ Points\t" +
+                    "SPA Unlocked\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tSPA DJ Points\t" +
+                    "SPL Unlocked\tSPL Rating\tSPL Lamp\tSPL Letter\tSPL EX Score\tSPL Miss Count\tSPL Note Count\tSPL DJ Points\t" +
+                    "DPN Unlocked\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPN DJ Points\t" +
+                    "DPH Unlocked\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPH DJ Points\t" +
+                    "DPA Unlocked\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPA DJ Points\t" +
+                    "DPL Unlocked\tDPL Rating\tDPL Lamp\tDPL Letter\tDPL EX Score\tDPL Miss Count\tDPL Note Count\tDLP DJ Points");
 
                 foreach (var entry in GetTrackerEntries())
                 {
