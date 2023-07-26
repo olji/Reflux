@@ -32,7 +32,7 @@ namespace Reflux
                     "DPN Unlocked\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPN DJ Points\t" +
                     "DPH Unlocked\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPH DJ Points\t" +
                     "DPA Unlocked\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPA DJ Points\t" +
-                    "DPL Unlocked\tDPL Rating\tDPL Lamp\tDPL Letter\tDPL EX Score\tDPL Miss Count\tDPL Note Count\tDLP DJ Points");
+                    "DPL Unlocked\tDPL Rating\tDPL Lamp\tDPL Letter\tDPL EX Score\tDPL Miss Count\tDPL Note Count\tDPL DJ Points");
 
                 foreach (var entry in GetTrackerEntries())
                 {
