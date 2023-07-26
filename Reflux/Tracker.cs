@@ -28,9 +28,12 @@ namespace Reflux
                     "SPN\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPN DJ Points\t" +
                     "SPH\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPH DJ Points\t" +
                     "SPA\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tSPA DJ Points\t" +
+                    "SPL\tSPL Rating\tSPL Lamp\tSPL Letter\tSPL EX Score\tSPL Miss Count\tSPL Note Count\tSPL DJ Points\t" +
                     "DPN\tDPN Rating\tDPN Lamp\tDPN Letter\tDPN EX Score\tDPN Miss Count\tDPN Note Count\tDPN DJ Points\t" +
                     "DPH\tDPH Rating\tDPH Lamp\tDPH Letter\tDPH EX Score\tDPH Miss Count\tDPH Note Count\tDPH DJ Points\t" +
-                    "DPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPA DJ Points");
+                    "DPA\tDPA Rating\tDPA Lamp\tDPA Letter\tDPA EX Score\tDPA Miss Count\tDPA Note Count\tDPA DJ Points\t" +
+                    "DPL\tDPL Rating\tDPL Lamp\tDPL Letter\tDPL EX Score\tDPL Miss Count\tDPL Note Count\tDLP DJ Points");
+
                 foreach (var entry in GetTrackerEntries())
                 {
                     sb.AppendLine(entry);
@@ -72,13 +75,14 @@ namespace Reflux
                 bool dp_counted = false;
                 for(int i = 0; i < 10; i++)
                 {
-                    /* Skip beginner and leggendaria */
-                    if(i == (int)Difficulty.SPB || i == (int)Difficulty.SPL || i == (int)Difficulty.DPB || i == (int)Difficulty.DPL) { continue; }
+                    /* Skip beginner */
+                    if(i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
+                    
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
                     /* Handle columns for missing charts */
                     if (!trackerDb.ContainsKey(chart))
                     {
-                        if (i < (int)Difficulty.DPB)
+                        if (i < (int)Difficulty.DPB && i < (int)Difficulty.SPL && i < (int)Difficulty.DPL)
                         {
                             /* Add tab for bit cost */
                             bitCostData.Append($"\t");
@@ -113,7 +117,7 @@ namespace Reflux
                             djp_str = "\t";
                         }
                         bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
-                        if (i < (int)Difficulty.DPB)
+                        if (i < (int)Difficulty.DPB && i < (int)Difficulty.SPL && i < (int)Difficulty.DPL)
                         {
                             var levels = Utils.songDb[songid].level;
                             int cost = (song.type == unlockType.Bits && !Utils.customTypes.ContainsKey(songid)
