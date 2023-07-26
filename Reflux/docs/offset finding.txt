@@ -1,0 +1,11 @@
+songlist: string: 5.1.1 (first song on list)
+playsettings: group: 4:1 4:4 4:0 4:0 4:1 (for random exhd nothing nothing sudden+)
+unlockdata: group: 4:1000 4:1 4:462 (for 5.1.1., first song which coincidentally is unlocked for everyone)
+
+play Sleepless Days SPA (id 25094) to find these 3:
+
+JudgeData: group: 4:[pgreat] 4:[great] 4:[good] 4:[bad] 4:[poor], first entry
+playdata: group: 4:25094 4:3 4:[ex score]
+currentsong: group: 4:25094 4:3, second entry on list
+
+scoremap: 8 byte hex: 3FFF, select address 3 blocks ahead in 8 byte view
