@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Version>1.13.12</Version>
-	  <ApplicationIcon>resources/icon.ico</ApplicationIcon>
+	<ApplicationIcon>resources/icon.ico</ApplicationIcon>
     <OutputPath>reflux build</OutputPath>
   </PropertyGroup>
 
@@ -16,6 +16,9 @@
 
   <ItemGroup>
     <None Update="config.ini">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="beginners.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="customtypes.txt">
