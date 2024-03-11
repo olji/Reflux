@@ -1,8 +1,8 @@
 songlist: string: 5.1.1 (first song on list)
-playsettings: group: 4:1 4:4 4:0 4:0 4:1 (for random exhd nothing nothing sudden+)
+playsettings: group: 4:1 4:4 4:0 4:0 4:1 (for random exhc nothing nothing sudden+)
 unlockdata: group: 4:1000 4:1 4:462 (for 5.1.1., first song which coincidentally is unlocked for everyone)
 
-play Sleepless Days SPA (id 25094) to find these 3:
+play a song you know the ID of to find the next 3.  I use Sleepless Days SPA (id 25094):
 
 JudgeData: group: 4:[pgreat] 4:[great] 4:[good] 4:[bad] 4:[poor], first entry
 playdata: group: 4:25094 4:3 4:[ex score]
