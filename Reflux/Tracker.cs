@@ -25,7 +25,6 @@ namespace Reflux
                 StringBuilder sb = new StringBuilder();
                 StringBuilder db = new StringBuilder();
                 sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSP DJ Points\tDP DJ Points\t" +
-                    "SPB Unlocked\tSPB Rating\tSPB Lamp\tSPB Letter\tSPB EX Score\tSPB Miss Count\tSPB Note Count\tSPB DJ Points\t" +
                     "SPN Unlocked\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPN DJ Points\t" +
                     "SPH Unlocked\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPH DJ Points\t" +
                     "SPA Unlocked\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tSPA DJ Points\t" +
@@ -76,14 +75,14 @@ namespace Reflux
                 bool dp_counted = false;
                 for(int i = 0; i < 10; i++)
                 {
-                    /* Skip DPB as it doesn't exist */
-                    if(i == (int)Difficulty.DPB) { continue; }
+                    /* Skip beginner */
+                    if(i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
                     
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
                     /* Handle columns for missing charts */
                     if (!trackerDb.ContainsKey(chart))
                     {
-                        if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
+                        if (i < (int)Difficulty.DPB && i < (int)Difficulty.SPL && i < (int)Difficulty.DPL)
                         {
                             /* Add tab for bit cost */
                             bitCostData.Append($"\t");
@@ -101,10 +100,10 @@ namespace Reflux
                             : 0;
                         totalDJP += djp;
                         string djp_str;
-                        if (!Decimal.Equals(djp,0) && ((!sp_counted && i < 6) || (!dp_counted && i > 5)))
+                        if (!Decimal.Equals(djp,0) && ((!sp_counted && i < 5) || (!dp_counted && i > 4)))
                         {
                             djp_str = $"{djp.ToString("E08", CultureInfo.CreateSpecificCulture("en-US"))}\t";
-                            if(i < 6)
+                            if(i < 5)
                             {
                                 SPD = djp;
                                 sp_counted = true;
@@ -118,7 +117,7 @@ namespace Reflux
                             djp_str = "\t";
                         }
                         bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
-                        if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
+                        if (i < (int)Difficulty.DPB && i < (int)Difficulty.SPL && i < (int)Difficulty.DPL)
                         {
                             var levels = Utils.songDb[songid].level;
                             int cost = (song.type == unlockType.Bits && !Utils.customTypes.ContainsKey(songid)
