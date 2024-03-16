@@ -75,14 +75,14 @@ namespace Reflux
                 bool dp_counted = false;
                 for(int i = 0; i < 10; i++)
                 {
-                    /* Skip beginner */
-                    if(i == (int)Difficulty.SPB || i == (int)Difficulty.DPB) { continue; }
+                    /* Skip DPB as it doesn't exist */
+                    if(i == (int)Difficulty.DPB) { continue; }
                     
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
                     /* Handle columns for missing charts */
                     if (!trackerDb.ContainsKey(chart))
                     {
-                        if (i < (int)Difficulty.DPB && i < (int)Difficulty.SPL && i < (int)Difficulty.DPL)
+                        if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
                         {
                             /* Add tab for bit cost */
                             bitCostData.Append($"\t");
@@ -100,10 +100,10 @@ namespace Reflux
                             : 0;
                         totalDJP += djp;
                         string djp_str;
-                        if (!Decimal.Equals(djp,0) && ((!sp_counted && i < 5) || (!dp_counted && i > 4)))
+                        if (!Decimal.Equals(djp,0) && ((!sp_counted && i < 6) || (!dp_counted && i > 5)))
                         {
                             djp_str = $"{djp.ToString("E08", CultureInfo.CreateSpecificCulture("en-US"))}\t";
-                            if(i < 5)
+                            if(i < 6)
                             {
                                 SPD = djp;
                                 sp_counted = true;
@@ -117,7 +117,7 @@ namespace Reflux
                             djp_str = "\t";
                         }
                         bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
-                        if (i < (int)Difficulty.DPB && i < (int)Difficulty.SPL && i < (int)Difficulty.DPL)
+                        if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
                         {
                             var levels = Utils.songDb[songid].level;
                             int cost = (song.type == unlockType.Bits && !Utils.customTypes.ContainsKey(songid)
