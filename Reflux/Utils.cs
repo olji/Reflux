@@ -205,8 +205,9 @@ namespace Reflux
         public static GameState FetchGameState(GameState currentState)
         {
             short word = 4;
+            short offset = 54;
 
-            var marker = ReadInt32(Offsets.JudgeData, word * 24);
+            var marker = ReadInt32(Offsets.JudgeData, word * offset);
             if (marker != 0)
             {
                 return GameState.playing;
@@ -588,9 +589,26 @@ namespace Reflux
         /// <returns>True if unlocked, false if locked</returns>
         public static bool GetUnlockStateForDifficulty(string songid, Difficulty diff)
         {
-            var unlockBits = unlockDb[songid].unlocks;
-            int bit = 1 << (int)diff;
-            return (bit & unlockBits) > 0;
+            try
+            {
+                var unlockBits = unlockDb[songid].unlocks;
+                int bit = 1 << (int)diff;
+                bool unlockState = (bit & unlockBits) > 0;
+                // Beginner difficulties are handled differently
+                if(diff == Difficulty.SPB)
+                {
+                    unlockState = songDb[songid].type == unlockType.Sub
+                        ? unlockState // If part of a music pack, the unlock state determines availability
+                        : songDb[songid].totalNotes[(int)diff] != 0; // Otherwise, note count not being zero means it's playable
+
+                }
+                return unlockState;
+            }
+            catch
+            {
+                Debug($"{songid} doesn't exist in unlockDb");
+                return false;
+            }
         }
         #endregion
 

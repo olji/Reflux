@@ -25,6 +25,7 @@ namespace Reflux
                 StringBuilder sb = new StringBuilder();
                 StringBuilder db = new StringBuilder();
                 sb.AppendLine("title\tType\tLabel\tCost Normal\tCost Hyper\tCost Another\tSP DJ Points\tDP DJ Points\t" +
+                    "SPB Unlocked\tSPB Rating\tSPB Lamp\tSPB Letter\tSPB EX Score\tSPB Miss Count\tSPB Note Count\tSPB DJ Points\t" +
                     "SPN Unlocked\tSPN Rating\tSPN Lamp\tSPN Letter\tSPN EX Score\tSPN Miss Count\tSPN Note Count\tSPN DJ Points\t" +
                     "SPH Unlocked\tSPH Rating\tSPH Lamp\tSPH Letter\tSPH EX Score\tSPH Miss Count\tSPH Note Count\tSPH DJ Points\t" +
                     "SPA Unlocked\tSPA Rating\tSPA Lamp\tSPA Letter\tSPA EX Score\tSPA Miss Count\tSPA Note Count\tSPA DJ Points\t" +
