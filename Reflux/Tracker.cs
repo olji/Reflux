@@ -77,11 +77,13 @@ namespace Reflux
                 for(int i = 0; i < 10; i++)
                 {
                     /* Skip DPB as it doesn't exist */
-                    if(i == (int)Difficulty.DPB) { continue; }
-                    
+                    if (i == (int)Difficulty.DPB) { continue; }
+
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
+                    bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
+
                     /* Handle columns for missing charts */
-                    if (!trackerDb.ContainsKey(chart))
+                    if (!trackerDb.ContainsKey(chart) || (chart.difficulty == Difficulty.SPB && !unlockState))
                     {
                         if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
                         {
@@ -117,15 +119,16 @@ namespace Reflux
                         {
                             djp_str = "\t";
                         }
-                        bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
+
                         if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
                         {
                             var levels = Utils.songDb[songid].level;
                             int cost = (song.type == unlockType.Bits && !Utils.customTypes.ContainsKey(songid)
-                                ? 500 * (levels[(int)chart.difficulty] + levels[(int)chart.difficulty + (int)Difficulty.DPB]) 
+                                ? 500 * (levels[(int)chart.difficulty] + levels[(int)chart.difficulty + (int)Difficulty.DPB])
                                 : 0);
                             bitCostData.Append($"{cost}\t");
                         }
+
                         chartData.Append($"{(unlockState ? "TRUE" : "FALSE")}\t");
                         chartData.Append($"{Utils.songDb[songid].level[(int)chart.difficulty]}\t");
                         chartData.Append($"{trackerDb[chart].lamp}\t");
