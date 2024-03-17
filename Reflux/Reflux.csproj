@@ -6,6 +6,7 @@
     <Version>1.14.0</Version>
 	<ApplicationIcon>resources/icon.ico</ApplicationIcon>
     <OutputPath>reflux build</OutputPath>
+	<PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,23 +15,28 @@
     <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="config.ini">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="beginners.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="customtypes.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="encodingfixes.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="offsets.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+<ItemGroup>
+	<None Update="config.ini">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	</None>
+	<None Update="beginners.txt">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	</None>
+	<None Update="customtypes.txt">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	</None>
+	<None Update="encodingfixes.txt">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	</None>
+	<None Update="offsets.txt">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	</None>
+</ItemGroup>
 
   <ItemGroup>
     <Folder Include="docs\" />
