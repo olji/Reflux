@@ -286,6 +286,8 @@ namespace Reflux
 
                 if (Config.Stream_FullSongInfo)
                 {
+                    var currentChart = Utils.FetchCurrentChart();
+                    var song = Utils.songDb[currentChart.songID];
                     File.WriteAllText("title.txt", String.Empty);
                     File.WriteAllText("artist.txt", String.Empty);
                     File.WriteAllText("englishtitle.txt", String.Empty);
@@ -398,12 +400,14 @@ namespace Reflux
 
                                 if (Config.Stream_FullSongInfo)
                                 {
+                                    var currentChart = Utils.FetchCurrentChart();
+                                    var song = Utils.songDb[currentChart.songID];
                                     File.WriteAllText("title.txt", String.Empty);
                                     File.WriteAllText("artist.txt", String.Empty);
                                     File.WriteAllText("englishtitle.txt", String.Empty);
                                     File.WriteAllText("genre.txt", String.Empty);
                                     File.WriteAllText("level.txt", String.Empty);
-                                    File.WriteAllText("folder.txt", "-");
+                                    File.WriteAllText("folder.txt", String.Empty);
                                     File.WriteAllText("playstate.txt", "menu"); // force menu switch here due to a bug
                                 }
                             }
@@ -423,13 +427,14 @@ namespace Reflux
                                 }
                                 if (Config.Stream_FullSongInfo)
                                 {
-                                    var song = Utils.songDb[Utils.FetchCurrentChart().songID];
+                                    var currentChart = Utils.FetchCurrentChart();
+                                    var song = Utils.songDb[currentChart.songID];
                                     File.WriteAllText("title.txt", song.title);
                                     File.WriteAllText("artist.txt", song.artist);
                                     File.WriteAllText("englishtitle.txt", song.title_english);
                                     File.WriteAllText("genre.txt", song.genre);
                                     File.WriteAllText("folder.txt", song.folder.ToString());
-                                    File.WriteAllText("level.txt", song.level.ToString());
+                                    File.WriteAllText("level.txt", song.level[(int)currentChart.difficulty].ToString());
                                 }
                             }
                         }
