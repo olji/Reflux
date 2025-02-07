@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Diagnostics;
 
 namespace Reflux
 {
-    public enum Difficulty { 
+    public enum Difficulty
+    {
         SPB = 0,
         SPN,
         SPH,
@@ -56,7 +57,7 @@ namespace Reflux
         public string title;
         public string title_english;
         public string artist;
-        public unlockType type;
+        public UnlockType type;
         public string genre;
         public string bpm;
         public int folder;
@@ -83,7 +84,7 @@ namespace Reflux
     /// <summary>
     /// The three different kind of song unlock types, Bits are anything that is visible while locked, and Sub is anything that is not visible while locked
     /// </summary>
-    public enum unlockType { Base = 1, Bits, Sub }; // Assume subscription songs unless specifically addressed in customtypes.txt
+    public enum UnlockType { Base = 1, Bits, Sub }; // Assume subscription songs unless specifically addressed in customtypes.txt
     /// <summary>
     /// Structure of the unlock data array in memory
     /// </summary>
@@ -91,7 +92,7 @@ namespace Reflux
     public struct UnlockData
     {
         public Int32 songID;
-        public unlockType type;
+        public UnlockType type;
         public Int32 unlocks;
         public Int32 unknown1;
         public Int32 unknown2;
@@ -99,7 +100,7 @@ namespace Reflux
         public Int32 unknown4;
         public Int32 unknown5;
     };
-    class Utils
+    static class Utils
     {
         [DllImport("kernel32.dll")]
         public static extern bool ReadProcessMemory(int hProcess,
@@ -174,7 +175,8 @@ namespace Reflux
                     var pair = line.Split('\t');
                     knownEncodingIssues.Add(pair[0], pair[1].Trim());
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Except(e);
             }
@@ -184,7 +186,8 @@ namespace Reflux
         /// </summary>
         public static void LoadCustomTypes()
         {
-            try {
+            try
+            {
                 foreach (var line in File.ReadAllLines("customtypes.txt"))
                 {
                     if (!line.Contains(',')) { continue; } /* Skip version string */
@@ -210,11 +213,15 @@ namespace Reflux
             var marker = ReadInt32(Offsets.JudgeData, word * offset);
             if (marker != 0)
             {
-                return GameState.playing;
+                marker = ReadInt32(Offsets.JudgeData, word * (offset + 1));
+                if (marker != 0)
+                {
+                    return GameState.playing;
+                }
             }
 
             /* Cannot go from song select to result screen anyway */
-            if(currentState == GameState.songSelect) { return currentState; }
+            if (currentState == GameState.songSelect) { return currentState; }
             marker = ReadInt32(Offsets.PlaySettings - word * 5, 0);
             if (marker == 1)
             {
@@ -313,10 +320,10 @@ namespace Reflux
         /// </summary>
         /// <param name="e"></param>
         /// <param name="context"></param>
-        public static void Except(Exception e, string context="")
+        public static void Except(Exception e, string context = "")
         {
             var stream = File.AppendText("log.txt");
-            stream.WriteLine($"{DateTime.Now}[ERR]: {(context == "" ? "Unhandled exception" : context )}: {e.Message}\n#### STACKTRACE\n{e.StackTrace}\n####");
+            stream.WriteLine($"{DateTime.Now}[ERR]: {(context == "" ? "Unhandled exception" : context)}: {e.Message}\n#### STACKTRACE\n{e.StackTrace}\n####");
             Console.WriteLine("[ERR]: " + e.Message);
             stream.Flush();
             stream.Close();
@@ -361,6 +368,15 @@ namespace Reflux
             Debug($"Read number: {id} in start of unlock list, expecting 1000");
             return title.Contains("5.1.1.") && id == 1000;
         }
+        public static byte[] ReadRaw(long position, int size)
+        {
+            int bytesRead = 0;
+
+            byte[] buffer = new byte[size];
+
+            ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
+            return buffer;
+        }
         /// <summary>
         /// Function to read any position in memory and convert to Int32
         /// </summary>
@@ -374,7 +390,7 @@ namespace Reflux
 
             byte[] buffer = new byte[size];
 
-            ReadProcessMemory((int) handle, position+offset, buffer, buffer.Length, ref bytesRead);
+            ReadProcessMemory((int)handle, position + offset, buffer, buffer.Length, ref bytesRead);
             return Utils.BytesToInt32(buffer.Take(size).ToArray(), 0);
         }
         /// <summary>
@@ -390,7 +406,7 @@ namespace Reflux
 
             byte[] buffer = new byte[size];
 
-            ReadProcessMemory((int) handle, position+offset, buffer, buffer.Length, ref bytesRead);
+            ReadProcessMemory((int)handle, position + offset, buffer, buffer.Length, ref bytesRead);
             return Utils.BytesToInt64(buffer.Take(size).ToArray(), 0);
         }
         /// <summary>
@@ -423,7 +439,7 @@ namespace Reflux
             var folder = BitConverter.ToInt32(new byte[] { folderBytes[0], 0, 0, 0 });
 
             var diff_section = buffer.Skip(slab * 4 + slab / 2).Take(10).ToArray();
-            var diff_levels = new int[] { 
+            var diff_levels = new int[] {
                 Convert.ToInt32(diff_section[0]),
                 Convert.ToInt32(diff_section[1]),
                 Convert.ToInt32(diff_section[2]),
@@ -451,7 +467,7 @@ namespace Reflux
                 bpm = bpmMax.ToString("000");
             }
 
-            var noteCounts = new int[] { 
+            var noteCounts = new int[] {
                 Utils.BytesToInt32(noteCounts_bytes, 0),
                 Utils.BytesToInt32(noteCounts_bytes, word),
                 Utils.BytesToInt32(noteCounts_bytes, word * 2),
@@ -461,7 +477,7 @@ namespace Reflux
                 Utils.BytesToInt32(noteCounts_bytes, word * 6),
                 Utils.BytesToInt32(noteCounts_bytes, word * 7),
                 Utils.BytesToInt32(noteCounts_bytes, word * 8),
-                Utils.BytesToInt32(noteCounts_bytes, word * 9) 
+                Utils.BytesToInt32(noteCounts_bytes, word * 9)
             };
 
 
@@ -497,10 +513,11 @@ namespace Reflux
             var oldUnlocks = unlockDb;
             GetUnlockStates();
             var changes = new Dictionary<string, UnlockData>();
-            foreach(var key in unlockDb.Keys)
+            foreach (var key in unlockDb.Keys)
             {
-                if (!oldUnlocks.ContainsKey(key)) {
-                    Log($"Key {key} was not present in past unlocks array"); 
+                if (!oldUnlocks.ContainsKey(key))
+                {
+                    Log($"Key {key} was not present in past unlocks array");
                     continue;
                 }
                 if (unlockDb[key].unlocks != oldUnlocks[key].unlocks)
@@ -531,7 +548,7 @@ namespace Reflux
 
             /* Handle offset issues caused by unlock data having information on songs not present in song db */
             int moreExtra = 0;
-            while(extra > 0)
+            while (extra > 0)
             {
                 buf = new byte[structSize * extra];
                 ReadProcessMemory((int)handle, Offsets.UnlockData + structSize * (songAmount + moreExtra), buf, buf.Length, ref nRead);
@@ -552,15 +569,17 @@ namespace Reflux
             int position = 0;
             int extra = 0;
             int structSize = Marshal.SizeOf(typeof(UnlockData));
-            while(position < buf.Length)
+            while (position < buf.Length)
             {
                 var sData = buf.Skip(position).Take(structSize).ToArray();
-                UnlockData data = new UnlockData { 
+                UnlockData data = new UnlockData
+                {
                     songID = BytesToInt32(sData, 0),
-                    type = (unlockType)BytesToInt32(sData, 4),
-                    unlocks = BytesToInt32(sData, 8) };
+                    type = (UnlockType)BytesToInt32(sData, 4),
+                    unlocks = BytesToInt32(sData, 8)
+                };
                 string id = data.songID.ToString("D5");
-                if(id == "00000") /* Take into account where songDb is populated with unreleased songs */
+                if (id == "00000") /* Take into account where songDb is populated with unreleased songs */
                 {
                     break;
                 }
@@ -570,7 +589,8 @@ namespace Reflux
                     var song = songDb[id];
                     song.type = data.type;
                     songDb[id] = song;
-                } catch
+                }
+                catch
                 {
                     Debug($"Song {id} not present in song database");
                     extra++;
@@ -595,9 +615,9 @@ namespace Reflux
                 int bit = 1 << (int)diff;
                 bool unlockState = (bit & unlockBits) > 0;
                 // Beginner difficulties are handled differently
-                if(diff == Difficulty.SPB)
+                if (diff == Difficulty.SPB)
                 {
-                    unlockState = songDb[songid].type == unlockType.Sub
+                    unlockState = songDb[songid].type == UnlockType.Sub
                         ? unlockState // If part of a music pack, the unlock state determines availability
                         : songDb[songid].totalNotes[(int)diff] != 0; // Otherwise, note count not being zero means it's playable
 
@@ -626,7 +646,7 @@ namespace Reflux
             Console.WriteLine(assemblyInfo.Name + " " + version);
             var netVersion = Network.GetLatestVersion();
             var segments = version.Split('.');
-            for(int i = 0; i < segments.Length; i++)
+            for (int i = 0; i < segments.Length; i++)
             {
                 var netSegments = netVersion.Split('.');
                 if (netSegments.Length <= i)

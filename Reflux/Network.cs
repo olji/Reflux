@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Text;
-using System.Net.Http;
-using System.IO;
-using System.Web;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Reflux
 {
@@ -40,7 +38,7 @@ namespace Reflux
         /// Check version of support file with what's at server and replace if newer
         /// </summary>
         /// <param name="filename">File to process</param>
-        public static void UpdateSupportFile(string filename, string version = "")
+        public static void UpdateSupportFile(string filename)
         {
 
             string currentVersion = File.ReadLines($"{filename}.txt").First();
@@ -48,7 +46,8 @@ namespace Reflux
             try
             {
                 content = GetLatestSupportFile(filename);
-            } catch
+            }
+            catch
             {
                 Console.WriteLine($"Failed to fetch {filename}.txt from master");
                 return;
@@ -106,7 +105,7 @@ namespace Reflux
             var v = File.ReadAllLines("offsets.txt")[0];
             File.Move("offsets.txt", $"archive/{v.Replace(':', '_')}.txt", true);
             File.WriteAllText("offsets.txt", filecontent);
-            Offsets.LoadOffsets("offsets.txt");
+            Offsets.LoadOffsets();
             return true;
         }
         /// <summary>
@@ -254,7 +253,7 @@ namespace Reflux
 
             //Utils.Debug($"Song {songid}");
 
-            HttpStatusCode response = HttpStatusCode.InternalServerError;
+            HttpStatusCode response;
             do
             {
                 response = AddSong(song);
@@ -283,7 +282,7 @@ namespace Reflux
 
                     do
                     {
-                        response = PostScore( chart, ScoreMap.Scores[songid].score[i], ScoreMap.Scores[songid].misscount[i], ScoreMap.Scores[songid].lamp[i]);
+                        response = PostScore(chart, ScoreMap.Scores[songid].score[i], ScoreMap.Scores[songid].misscount[i], ScoreMap.Scores[songid].lamp[i]);
                     } while (response != HttpStatusCode.OK);
                 }
                 catch

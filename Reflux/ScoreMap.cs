@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Runtime.InteropServices;
 
 namespace Reflux
@@ -52,10 +51,11 @@ namespace Reflux
             int nRead = 0;
             ReadProcessMemory((int)Utils.handle, startaddress, buffer, buffer.Length, ref nRead);
             List<long> llist_startpoints = new List<long>();
-            for(int i = 0; i < buffer.Length / 8; i++)
+            for (int i = 0; i < buffer.Length / 8; i++)
             {
                 long addr = Utils.BytesToInt64(buffer, i * 8);
-                if(addr != 0x494fdce0) {
+                if (addr != 0x494fdce0)
+                {
                     llist_startpoints.Add(addr);
                 }
             }
@@ -63,19 +63,20 @@ namespace Reflux
             buffer = new byte[64];
             foreach (var entrypoint in llist_startpoints)
             {
-                if(entrypoint == nullobj) { continue; }
+                if (entrypoint == nullobj) { continue; }
                 ReadProcessMemory((int)Utils.handle, entrypoint, buffer, buffer.Length, ref nRead);
-                ListNode entry = new ListNode() {
-                    next = Utils.BytesToInt64(buffer, 0, 8), 
-                    prev = Utils.BytesToInt64(buffer, 8, 8), 
-                    diff = Utils.BytesToInt32(buffer, 16, 4), 
-                    song = Utils.BytesToInt32(buffer, 20, 4), 
-                    playtype = Utils.BytesToInt32(buffer, 24, 4), 
-                    uk2 = Utils.BytesToInt32(buffer, 28, 4), 
-                    score = Utils.BytesToInt32(buffer, 32, 4), 
-                    misscount = (uint)Utils.BytesToInt32(buffer, 36, 4), 
-                    uk3 = Utils.BytesToInt32(buffer, 40, 4), 
-                    uk4 = Utils.BytesToInt32(buffer, 44, 4), 
+                ListNode entry = new ListNode()
+                {
+                    next = Utils.BytesToInt64(buffer, 0, 8),
+                    prev = Utils.BytesToInt64(buffer, 8, 8),
+                    diff = Utils.BytesToInt32(buffer, 16, 4),
+                    song = Utils.BytesToInt32(buffer, 20, 4),
+                    playtype = Utils.BytesToInt32(buffer, 24, 4),
+                    uk2 = Utils.BytesToInt32(buffer, 28, 4),
+                    score = Utils.BytesToInt32(buffer, 32, 4),
+                    misscount = (uint)Utils.BytesToInt32(buffer, 36, 4),
+                    uk3 = Utils.BytesToInt32(buffer, 40, 4),
+                    uk4 = Utils.BytesToInt32(buffer, 44, 4),
                     lamp = Utils.BytesToInt32(buffer, 48, 4)
                 };
                 FollowLinkedList(entry);
@@ -84,13 +85,14 @@ namespace Reflux
 
             Scores = new Dictionary<string, ScoreData>();
             /* Parse into more workable format */
-            foreach(var node in nodes)
+            foreach (var node in nodes)
             {
                 var sections = node.Key.Split('_');
                 if (!Scores.ContainsKey(sections[0]))
                 {
-                    var scoredata = new ScoreData() { 
-                        songID = sections[0], 
+                    var scoredata = new ScoreData()
+                    {
+                        songID = sections[0],
                         score = new int[10],
                         misscount = new uint[10],
                         lamp = new Lamp[10],
@@ -118,7 +120,7 @@ namespace Reflux
             {
                 var addr = traveller.next;
 
-                string key = $"{traveller.song.ToString("D5")}_{traveller.diff}_{traveller.playtype}";
+                string key = $"{traveller.song:D5}_{traveller.diff}_{traveller.playtype}";
                 if (nodes.ContainsKey(key))
                 {
                     break;

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Text;
+﻿using Microsoft.Extensions.Configuration.Ini;
+using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Ini;
+using System.Text;
 
 namespace Reflux
 {
@@ -11,6 +10,7 @@ namespace Reflux
         public static string Server { get; private set; }
         public static string UpdateServer { get; private set; }
         public static bool UpdateFiles { get; private set; }
+        public static bool SearchOffsets { get; private set; }
         public static string API_key { get; private set; }
         public static bool Output_songlist { get; private set; }
         public static bool Save_remote { get; private set; }
@@ -40,6 +40,8 @@ namespace Reflux
 
             UpdateFiles = ReadConfigBoolean("update:updatefiles");
             UpdateServer = ReadConfigString("update:updateserver");
+
+            SearchOffsets = ReadConfigBoolean("offsets:searchmode");
 
             Save_remote = ReadConfigBoolean("record:saveremote");
             Save_local = ReadConfigBoolean("record:savelocal");
@@ -76,8 +78,7 @@ namespace Reflux
         {
             if (config.ContainsKey(key))
             {
-                bool value;
-                if (bool.TryParse(config[key], out value))
+                if (bool.TryParse(config[key], out bool value))
                 {
                     Utils.Debug($"{key}: {value}");
                     return value;
