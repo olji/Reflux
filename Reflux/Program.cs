@@ -286,8 +286,6 @@ namespace Reflux
 
                 if (Config.Stream_FullSongInfo)
                 {
-                    var currentChart = Utils.FetchCurrentChart();
-                    var song = Utils.songDb[currentChart.songID];
                     File.WriteAllText("title.txt", String.Empty);
                     File.WriteAllText("artist.txt", String.Empty);
                     File.WriteAllText("englishtitle.txt", String.Empty);

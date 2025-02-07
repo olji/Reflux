@@ -59,7 +59,7 @@ namespace Reflux
         /// <returns>Lazily evaluated list of entries</returns>
         static IEnumerable<string> GetTrackerEntries()
         {
-            foreach(var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
+            foreach (var songid in trackerDb.Keys.Select(x => x.songID).Distinct())
             {
                 if (!Utils.unlockDb.ContainsKey(songid)) { continue; }
                 var song = Utils.unlockDb[songid];
@@ -74,13 +74,29 @@ namespace Reflux
                 decimal DPD = 0;
                 bool sp_counted = false;
                 bool dp_counted = false;
-                for(int i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     /* Skip DPB as it doesn't exist */
                     if (i == (int)Difficulty.DPB) { continue; }
 
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
-                    bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
+                    bool unlockState = false; // Initialize unlock state to false
+
+                    /* Check if the chart difficulty is SPA or DPA, and set unlockState accordingly */
+                    if (chart.difficulty == Difficulty.SPA || chart.difficulty == Difficulty.DPA)
+                    {
+                        unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
+                    }
+                    /* For SPL and DPL, set unlockState based on SPA or DPA unlock status */
+                    else if (chart.difficulty == Difficulty.SPL || chart.difficulty == Difficulty.DPL)
+                    {
+                        // Get unlock state for SPA or DPA
+                        bool unlockStateSPA = Utils.GetUnlockStateForDifficulty(songid, Difficulty.SPA);
+                        bool unlockStateDPA = Utils.GetUnlockStateForDifficulty(songid, Difficulty.DPA);
+
+                        // Set unlockState to true only if both SPA and DPA are unlocked
+                        unlockState = unlockStateSPA && unlockStateDPA;
+                    }
 
                     /* Handle columns for missing charts */
                     if (!trackerDb.ContainsKey(chart) || (chart.difficulty == Difficulty.SPB && !unlockState))
@@ -103,19 +119,21 @@ namespace Reflux
                             : 0;
                         totalDJP += djp;
                         string djp_str;
-                        if (!Decimal.Equals(djp,0) && ((!sp_counted && i < 6) || (!dp_counted && i > 5)))
+                        if (!Decimal.Equals(djp, 0) && ((!sp_counted && i < 6) || (!dp_counted && i > 5)))
                         {
                             djp_str = $"{djp.ToString("E08", CultureInfo.CreateSpecificCulture("en-US"))}\t";
-                            if(i < 6)
+                            if (i < 6)
                             {
                                 SPD = djp;
                                 sp_counted = true;
-                            } else
+                            }
+                            else
                             {
                                 DPD = djp;
                                 dp_counted = true;
                             }
-                        }else
+                        }
+                        else
                         {
                             djp_str = "\t";
                         }
@@ -147,6 +165,7 @@ namespace Reflux
                 yield return sb.ToString();
             }
         }
+
         /// <summary>
         /// If saving to remote, load tracker.db if exist, otherwise create, populate potential new songs with data from score data hash map
         /// When not saving to remote, just generate the tracker info from INFINITAS internal hash map
