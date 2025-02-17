@@ -1,8 +1,8 @@
-P2D:J:B:A:2024121800
-songList = 0x1426CA0A0
-unlockdata = 0x141DFE410
-playSettings = 0x141acf134
+P2D:J:B:A:2025021200
+songList = 0x1426C9F30
+unlockdata = 0x141DFE430
+playSettings = 0x141ACF124
 playData = 0x141ACF3E4
 currentsong = 0x141D7C150
 judgeData = 0x141D7BF5C
-datamap = 0x142AB0118
+datamap = 0x142AAFFA8
