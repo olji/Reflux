@@ -98,6 +98,7 @@ namespace Reflux
                 Console.WriteLine($"Latest offsets available are for build {fileversion}, which didn't match detected version {version}");
                 return false;
             }
+            Console.WriteLine($"Updated offset for version found");
             if (!Directory.Exists("archive"))
             {
                 Directory.CreateDirectory("archive");

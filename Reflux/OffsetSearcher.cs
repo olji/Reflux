@@ -3,17 +3,15 @@ using System.Linq;
 
 namespace Reflux
 {
-    public class OffsetSearcher
+    public static class OffsetSearcher
     {
         // Movement between versions is generally on scale of tens of kilobytes, but 2MB shouldn't be too
         // taxing and gives a wide net to catch the pattern in memory in case it jumps massively
         public static int SearchSpace = 2000000;
-        public OffsetSearcher()
+        public static OffsetsCollection SearchNewOffsets()
         {
-
-        }
-        public OffsetsCollection SearchNewOffsets()
-        {
+            Console.WriteLine("Starting offset search mode");
+            Console.WriteLine();
             OffsetsCollection newOffsets = new OffsetsCollection();
             var buffer = FetchDataSet(Offsets.SongList, SearchSpace); // 2MB 
             newOffsets.SongList = buffer.address[Search(buffer.data, MergeByteRepresentations("5.1.1.".ToBytes()))];
@@ -63,7 +61,7 @@ namespace Reflux
             newOffsets.PlaySettings = settingsAddress;
             return newOffsets;
         }
-        (long address, Judge judgeInfo) QueryJudgeInfo()
+        static (long address, Judge judgeInfo) QueryJudgeInfo()
         {
             var j = new Judge();
             Console.WriteLine("Enter pgreat count: ");
@@ -177,11 +175,11 @@ namespace Reflux
             }
             return (address: address[index], judgeInfo: j);
         }
-        byte[] MergeByteRepresentations(params byte[][] data)
+        static byte[] MergeByteRepresentations(params byte[][] data)
         {
             return data.SelectMany(x => x).ToArray();
         }
-        (long[] address, byte[] data) FetchDataSet(long address, int distanceFromCenter)
+        static (long[] address, byte[] data) FetchDataSet(long address, int distanceFromCenter)
         {
             byte[] data = new byte[distanceFromCenter * 2];
             long[] addresses = new long[distanceFromCenter * 2];
@@ -197,7 +195,7 @@ namespace Reflux
         /// <param name="pattern"></param>
         /// <returns>Returns offset, or -1 if no match</returns>
         /// <exception cref="ArgumentException"></exception>
-        int Search(byte[] data, byte[] pattern, int ignoreIndex = -1)
+        static int Search(byte[] data, byte[] pattern, int ignoreIndex = -1)
         {
             if (data.Length < pattern.Length)
             {

@@ -116,12 +116,27 @@ namespace Reflux
                     }
                 }
 
+                Console.Clear();
                 if (foundVersion != Offsets.Version)
                 {
-                    if (Config.SearchOffsets)
+                    if (Config.UpdateFiles)
                     {
-                        var ofs = new OffsetSearcher();
-                        var result = ofs.SearchNewOffsets();
+                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nChecking if an update is available.");
+                        correctVersion = Network.UpdateOffset(foundVersion);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nReflux is configured to not look for updates.");
+                    }
+                }
+                else
+                {
+                    correctVersion = true;
+                }
+                // Start manual search if no correct version could be found
+                if (!correctVersion)
+                {
+                    var result = OffsetSearcher.SearchNewOffsets();
                         Console.WriteLine("New offsets found:");
                         Console.WriteLine($"SongList: {result.SongList:X}");
                         Console.WriteLine($"UnlockData: {result.UnlockData:X}");
@@ -134,31 +149,12 @@ namespace Reflux
                         Offsets.SaveOffsets(foundVersion, result);
                         correctVersion = true;
                     }
-                    else if (Config.UpdateFiles)
-                    {
-                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nAn update is available.  Updating...");
-                        correctVersion = Network.UpdateOffset(foundVersion);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.  An update is not currently available.\n \nThis is normal after an Infinitas update, and fixed as soon as we are made aware.\nPlease ping Okapi or another dev for assistance.\n");
-                    }
-                }
-                else
-                {
-                    correctVersion = true;
-                }
+
                 Network.UpdateSupportFile("encodingfixes");
                 Network.UpdateSupportFile("customtypes");
                 Utils.LoadEncodingFixes();
                 Utils.LoadCustomTypes();
 
-                if (!correctVersion)
-                {
-                    Console.WriteLine("Reflux will now exit.");
-                    Console.ReadLine();
-                    return;
-                }
                 #endregion
 
                 #region Wait until data is properly loaded
