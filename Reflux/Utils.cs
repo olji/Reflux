@@ -579,7 +579,7 @@ namespace Reflux
                 {
                     songID = BytesToInt32(sData, 0),
 
-                    type = (unlockType)BytesToInt32(sData, 4),
+                    type = (UnlockType)BytesToInt32(sData, 4),
 
                     unlocks = BytesToInt32(sData, 8)
                 };
