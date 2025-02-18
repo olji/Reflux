@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json.Linq;
 
 namespace Reflux
 {
@@ -65,7 +65,7 @@ namespace Reflux
 
             short word = 4;
 
-            Difficulty difficulty = 0;
+            Difficulty difficulty;
             try
             {
                 var song = Utils.ReadInt32(Offsets.PlayData, 0);
@@ -106,18 +106,20 @@ namespace Reflux
         /// <returns></returns>
         ChartInfo FetchChartInfo(SongInfo song, Difficulty difficulty)
         {
-            ChartInfo result = new ChartInfo();
-            /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
-            result.difficulty = difficulty;
-            result.level = song.level[(int)difficulty];
-            result.title = song.title;
-            result.title_english = song.title_english;
-            result.totalNotes = song.totalNotes[(int)difficulty];
-            result.artist = song.artist;
-            result.genre = song.genre;
-            result.bpm = song.bpm;
-            result.songid = song.ID;
-            result.unlocked = Utils.GetUnlockStateForDifficulty(song.ID, difficulty);
+            ChartInfo result = new ChartInfo
+            {
+                /* Lamp: 0-7, [noplay, fail, a-clear, e-clear, N, H, EX, FC] */
+                difficulty = difficulty,
+                level = song.level[(int)difficulty],
+                title = song.title,
+                title_english = song.title_english,
+                totalNotes = song.totalNotes[(int)difficulty],
+                artist = song.artist,
+                genre = song.genre,
+                bpm = song.bpm,
+                songid = song.ID,
+                unlocked = Utils.GetUnlockStateForDifficulty(song.ID, difficulty)
+            };
             return result;
 
         }
@@ -169,25 +171,31 @@ namespace Reflux
         /// <returns></returns>
         public JObject GetJsonEntry()
         {
-            JObject json = new JObject();
-            json["score"] = exscore;
-            json["lamp"] = expandLamp(clearLamp);
-            json["matchType"] = "title";
-            json["identifier"] = chart.title;
-            json["playtype"] = chart.difficulty.ToString().Substring(0, 2);
-            json["difficulty"] = expandDifficulty(chart.difficulty.ToString().Substring(2, 1));
-            json["timeAchieved"] = new DateTimeOffset(timestamp).ToUnixTimeMilliseconds();
-            json["hitData"] = new JObject();
-            json["hitData"]["pgreat"] = judges.pgreat;
-            json["hitData"]["great"] = judges.great;
-            json["hitData"]["good"] = judges.good;
-            json["hitData"]["bad"] = judges.bad;
-            json["hitData"]["poor"] = judges.poor;
-            json["hitMeta"] = new JObject();
-            json["hitMeta"]["fast"] = judges.fast;
-            json["hitMeta"]["slow"] = judges.slow;
-            json["hitMeta"]["comboBreak"] = judges.combobreak;
-            json["hitMeta"]["gauge"] = gauge;
+            JObject json = new JObject
+            {
+                ["score"] = exscore,
+                ["lamp"] = ExpandLamp(clearLamp),
+                ["matchType"] = "title",
+                ["identifier"] = chart.title,
+                ["playtype"] = chart.difficulty.ToString().Substring(0, 2),
+                ["difficulty"] = ExpandDifficulty(chart.difficulty.ToString().Substring(2, 1)),
+                ["timeAchieved"] = new DateTimeOffset(timestamp).ToUnixTimeMilliseconds(),
+            };
+            json["hitData"] = new JObject
+            {
+                ["pgreat"] = judges.pgreat,
+                ["great"] = judges.great,
+                ["good"] = judges.good,
+                ["bad"] = judges.bad,
+                ["poor"] = judges.poor
+            };
+            json["hitMeta"] = new JObject
+            {
+                ["fast"] = judges.fast,
+                ["slow"] = judges.slow,
+                ["comboBreak"] = judges.combobreak,
+                ["gauge"] = gauge
+            };
             if (MissCountValid)
             {
                 json["hitMeta"]["bp"] = judges.bad + judges.poor;
@@ -203,13 +211,13 @@ namespace Reflux
             StringBuilder sb = new StringBuilder($"{chart.title}\t{chart.difficulty}");
             if (Config.HeaderConfig.songInfo)
             {
-            sb.Append($"\t{chart.title_english}\t{chart.bpm}\t{chart.artist}\t{chart.genre}");
+                sb.Append($"\t{chart.title_english}\t{chart.bpm}\t{chart.artist}\t{chart.genre}");
             }
             if (Config.HeaderConfig.chartDetails)
             {
                 sb.Append($"\t{chart.totalNotes}\t{chart.level}");
             }
-            sb.Append($"\t{judges.playtype}\t{grade}\t{clearLamp}\t{(MissCountValid ? (judges.poor+judges.bad).ToString() : "-")}");
+            sb.Append($"\t{judges.playtype}\t{grade}\t{clearLamp}\t{(MissCountValid ? (judges.poor + judges.bad).ToString() : "-")}");
             if (Config.HeaderConfig.resultDetails)
             {
                 sb.Append($"\t{gauge}\t{exscore}");
@@ -230,16 +238,17 @@ namespace Reflux
         /// </summary>
         /// <param name="diff">Abbreviated difficulty void of SP or DP</param>
         /// <returns></returns>
-        string expandDifficulty(string diff)
+        string ExpandDifficulty(string diff)
         {
-            switch (diff)
+            return diff switch
             {
-                case "B": return "BEGINNER";
-                case "N": return "NORMAL";
-                case "H": return "HYPER";
-                case "A": return "ANOTHER";
-                case "L": return "LEGGENDARIA";
-            }
+                "B" => "BEGINNER",
+                "N" => "NORMAL",
+                "H" => "HYPER",
+                "A" => "ANOTHER",
+                "L" => "LEGGENDARIA",
+                _ => throw new NotImplementedException($"Unhandled difficulty string code {diff}"),
+            };
             throw new Exception($"Unexpected difficulty character {diff}");
         }
         /// <summary>
@@ -247,7 +256,7 @@ namespace Reflux
         /// </summary>
         /// <param name="lamp"></param>
         /// <returns></returns>
-        public string expandLamp(Lamp lamp)
+        public string ExpandLamp(Lamp lamp)
         {
             switch (lamp)
             {

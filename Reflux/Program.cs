@@ -1,15 +1,14 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Globalization;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 
 namespace Reflux
 {
@@ -94,7 +93,7 @@ namespace Reflux
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
                 var bm2dxModule = process.MainModule;
-                Offsets.LoadOffsets("offsets.txt");
+                Offsets.LoadOffsets();
 
                 /* Figure out if offset file is relevant */
                 #region Figure out if offset file is relevant
@@ -117,33 +116,45 @@ namespace Reflux
                     }
                 }
 
+                Console.Clear();
                 if (foundVersion != Offsets.Version)
                 {
                     if (Config.UpdateFiles)
                     {
-                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nAn update is available.  Updating...");
+                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nChecking if an update is available.");
                         correctVersion = Network.UpdateOffset(foundVersion);
                     }
                     else
                     {
-                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.  An update is not currently available.\n \nThis is normal after an Infinitas update, and fixed as soon as we are made aware.\nPlease ping Okapi or another dev for assistance.\n") ;
+                        Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nReflux is configured to not look for updates.");
                     }
                 }
                 else
                 {
                     correctVersion = true;
                 }
+                // Start manual search if no correct version could be found
+                if (!correctVersion)
+                {
+                    var result = OffsetSearcher.SearchNewOffsets();
+                        Console.WriteLine("New offsets found:");
+                        Console.WriteLine($"SongList: {result.SongList:X}");
+                        Console.WriteLine($"UnlockData: {result.UnlockData:X}");
+                        Console.WriteLine($"PlaySettings: {result.PlaySettings:X}");
+                        Console.WriteLine($"PlayData: {result.PlayData:X}");
+                        Console.WriteLine($"CurrentSong: {result.CurrentSong:X}");
+                        Console.WriteLine($"JudgeData: {result.JudgeData:X}");
+                        Console.WriteLine($"DataMap: {result.DataMap:X}");
+                        Console.WriteLine("Applying new offsets and trying to continue...");
+                        Offsets.SaveOffsets(foundVersion, result);
+                        correctVersion = true;
+                    }
+
                 Network.UpdateSupportFile("encodingfixes");
                 Network.UpdateSupportFile("customtypes");
                 Utils.LoadEncodingFixes();
                 Utils.LoadCustomTypes();
 
-                if (!correctVersion)
-                {
-                    Console.WriteLine("Reflux will now exit.");
-                    Console.ReadLine();
-                    return;
-                }
                 #endregion
 
                 #region Wait until data is properly loaded
@@ -153,14 +164,15 @@ namespace Reflux
                 while (!songlistFetched)
                 {
                     /* Don't fetch song list until it seems loaded */
-                    while (!Utils.DataLoaded()) { 
+                    while (!Utils.DataLoaded())
+                    {
                         Thread.Sleep(5000);
                         if (process.HasExited)
                         {
                             processExit = true;
                             break;
                         }
-                    } 
+                    }
                     if (process.HasExited || processExit)
                     {
                         processExit = true;
@@ -197,12 +209,16 @@ namespace Reflux
 
                 if (Config.Save_json)
                 {
-                    JObject head = new JObject();
-                    head["service"] = "Infinitas";
-                    head["game"] = "iidx";
-                    JObject json = new JObject();
-                    json["head"] = head;
-                    json["body"] = new JArray();
+                    JObject head = new JObject
+                    {
+                        ["service"] = "Infinitas",
+                        ["game"] = "iidx"
+                    };
+                    JObject json = new JObject
+                    {
+                        ["head"] = head,
+                        ["body"] = new JArray()
+                    };
                     File.WriteAllText(jsonfile.FullName, json.ToString());
                 }
 
@@ -239,7 +255,7 @@ namespace Reflux
                         if (songcount > 0)
                         {
                             double percent = ((double)i) / songcount * 100;
-                            Console.Write($"\rProgress: {percent.ToString("0.##")}%   ");
+                            Console.Write($"\rProgress: {percent:0.##}%   ");
                         }
                         /* Upload new songs */
                         if (!unlock_db.ContainsKey(song.Key) || init)
@@ -354,7 +370,7 @@ namespace Reflux
                                     if (Config.Save_latestTxt)
                                     {
                                         File.WriteAllText("latest-grade.txt", latestData.Grade.ToString());
-                                        File.WriteAllText("latest-lamp.txt", latestData.expandLamp(latestData.Lamp));
+                                        File.WriteAllText("latest-lamp.txt", latestData.ExpandLamp(latestData.Lamp));
                                         File.WriteAllText("latest-difficulty.txt", latestData.Chart.difficulty.ToString());
                                         File.WriteAllText("latest-difficulty-color.txt",
 

@@ -48,7 +48,8 @@ namespace Reflux
                     }
                     File.WriteAllText("unlockdb", db.ToString());
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Utils.Except(e);
             }
@@ -141,7 +142,7 @@ namespace Reflux
                         if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
                         {
                             var levels = Utils.songDb[songid].level;
-                            int cost = (song.type == unlockType.Bits && !Utils.customTypes.ContainsKey(songid)
+                            int cost = (song.type == UnlockType.Bits && !Utils.customTypes.ContainsKey(songid)
                                 ? 500 * (levels[(int)chart.difficulty] + levels[(int)chart.difficulty + (int)Difficulty.DPB])
                                 : 0);
                             bitCostData.Append($"{cost}\t");
@@ -180,14 +181,18 @@ namespace Reflux
                     foreach (var line in File.ReadAllLines("tracker.db"))
                     {
                         var segments = line.Split(',');
-                        trackerDb.Add(new Chart() { 
+                        trackerDb.Add(new Chart()
+                        {
                             songID = segments[0],
-                            difficulty = (Difficulty)Enum.Parse(typeof(Difficulty), segments[1]) },
-                            new TrackerInfo() { grade = (Grade)Enum.Parse(typeof(Grade), segments[2]),
+                            difficulty = (Difficulty)Enum.Parse(typeof(Difficulty), segments[1])
+                        },
+                            new TrackerInfo()
+                            {
+                                grade = (Grade)Enum.Parse(typeof(Grade), segments[2]),
                                 lamp = (Lamp)Enum.Parse(typeof(Lamp), segments[3]),
                                 ex_score = int.Parse(segments[4]),
                                 misscount = uint.Parse(segments[5]),
-                                });
+                            });
                     }
                 }
                 catch (Exception e)
@@ -205,7 +210,8 @@ namespace Reflux
 
                     var c = new Chart() { songID = song.Key, difficulty = (Difficulty)i };
 
-                    if (!trackerDb.ContainsKey(c)) {
+                    if (!trackerDb.ContainsKey(c))
+                    {
                         trackerDb.Add(c, new TrackerInfo()
                         {
                             lamp = ScoreMap.Scores[song.Key].lamp[i],
@@ -214,7 +220,8 @@ namespace Reflux
                             misscount = ScoreMap.Scores[song.Key].misscount[i],
                             DJPoints = ScoreMap.Scores[song.Key].DJPoints[i]
                         });
-                    } else
+                    }
+                    else
                     {
                         var entry = trackerDb[c];
                         /* Only overwrite lamp and grade, as those are the only with potential custom values */

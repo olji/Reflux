@@ -1,8 +1,7 @@
-﻿using System;
-using System.Text;
+﻿using Microsoft.Extensions.Configuration.Ini;
+using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Ini;
+using System.Text;
 
 namespace Reflux
 {
@@ -76,8 +75,7 @@ namespace Reflux
         {
             if (config.ContainsKey(key))
             {
-                bool value;
-                if (bool.TryParse(config[key], out value))
+                if (bool.TryParse(config[key], out bool value))
                 {
                     Utils.Debug($"{key}: {value}");
                     return value;

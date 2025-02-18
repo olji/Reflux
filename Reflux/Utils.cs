@@ -57,7 +57,7 @@ namespace Reflux
         public string title;
         public string title_english;
         public string artist;
-        public unlockType type;
+        public UnlockType type;
         public string genre;
         public string bpm;
         public int folder;
@@ -84,7 +84,7 @@ namespace Reflux
     /// <summary>
     /// The three different kind of song unlock types, Bits are anything that is visible while locked, and Sub is anything that is not visible while locked
     /// </summary>
-    public enum unlockType { Base = 1, Bits, Sub }; // Assume subscription songs unless specifically addressed in customtypes.txt
+    public enum UnlockType { Base = 1, Bits, Sub }; // Assume subscription songs unless specifically addressed in customtypes.txt
     /// <summary>
     /// Structure of the unlock data array in memory
     /// </summary>
@@ -92,7 +92,7 @@ namespace Reflux
     public struct UnlockData
     {
         public Int32 songID;
-        public unlockType type;
+        public UnlockType type;
         public Int32 unlocks;
         public Int32 unknown1;
         public Int32 unknown2;
@@ -100,7 +100,7 @@ namespace Reflux
         public Int32 unknown4;
         public Int32 unknown5;
     };
-    class Utils
+    static class Utils
     {
         [DllImport("kernel32.dll")]
         public static extern bool ReadProcessMemory(int hProcess,
@@ -213,7 +213,9 @@ namespace Reflux
             var marker = ReadInt32(Offsets.JudgeData, word * offset);
             if (marker != 0)
             {
+
                 // In case it has shifted for whatever reason
+
                 marker = ReadInt32(Offsets.JudgeData, word * (offset + 1));
                 if (marker != 0)
                 {
@@ -368,6 +370,15 @@ namespace Reflux
             Debug($"Read string: \"{title}\" in start of song list, expecting \"5.1.1.\"");
             Debug($"Read number: {id} in start of unlock list, expecting 1000");
             return title.Contains("5.1.1.") && id == 1000;
+        }
+        public static byte[] ReadRaw(long position, int size)
+        {
+            int bytesRead = 0;
+
+            byte[] buffer = new byte[size];
+
+            ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
+            return buffer;
         }
         /// <summary>
         /// Function to read any position in memory and convert to Int32
@@ -567,7 +578,9 @@ namespace Reflux
                 UnlockData data = new UnlockData
                 {
                     songID = BytesToInt32(sData, 0),
+
                     type = (unlockType)BytesToInt32(sData, 4),
+
                     unlocks = BytesToInt32(sData, 8)
                 };
                 string id = data.songID.ToString("D5");
@@ -609,7 +622,7 @@ namespace Reflux
                 // Beginner difficulties are handled differently
                 if (diff == Difficulty.SPB)
                 {
-                    unlockState = songDb[songid].type == unlockType.Sub
+                    unlockState = songDb[songid].type == UnlockType.Sub
                         ? unlockState // If part of a music pack, the unlock state determines availability
                         : songDb[songid].totalNotes[(int)diff] != 0; // Otherwise, note count not being zero means it's playable
 
