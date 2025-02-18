@@ -213,6 +213,9 @@ namespace Reflux
             var marker = ReadInt32(Offsets.JudgeData, word * offset);
             if (marker != 0)
             {
+
+                // In case it has shifted for whatever reason
+
                 marker = ReadInt32(Offsets.JudgeData, word * (offset + 1));
                 if (marker != 0)
                 {
@@ -575,7 +578,9 @@ namespace Reflux
                 UnlockData data = new UnlockData
                 {
                     songID = BytesToInt32(sData, 0),
-                    type = (UnlockType)BytesToInt32(sData, 4),
+
+                    type = (unlockType)BytesToInt32(sData, 4),
+
                     unlocks = BytesToInt32(sData, 8)
                 };
                 string id = data.songID.ToString("D5");

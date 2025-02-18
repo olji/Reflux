@@ -81,7 +81,23 @@ namespace Reflux
                     if (i == (int)Difficulty.DPB) { continue; }
 
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
-                    bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
+                    bool unlockState = false; // Initialize unlock state to false
+
+                    /* Check if the chart difficulty is SPA or DPA, and set unlockState accordingly */
+                    if (chart.difficulty == Difficulty.SPA || chart.difficulty == Difficulty.DPA)
+                    {
+                        unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
+                    }
+                    /* For SPL and DPL, set unlockState based on SPA or DPA unlock status */
+                    else if (chart.difficulty == Difficulty.SPL || chart.difficulty == Difficulty.DPL)
+                    {
+                        // Get unlock state for SPA or DPA
+                        bool unlockStateSPA = Utils.GetUnlockStateForDifficulty(songid, Difficulty.SPA);
+                        bool unlockStateDPA = Utils.GetUnlockStateForDifficulty(songid, Difficulty.DPA);
+
+                        // Set unlockState to true only if both SPA and DPA are unlocked
+                        unlockState = unlockStateSPA && unlockStateDPA;
+                    }
 
                     /* Handle columns for missing charts */
                     if (!trackerDb.ContainsKey(chart) || (chart.difficulty == Difficulty.SPB && !unlockState))
@@ -150,6 +166,7 @@ namespace Reflux
                 yield return sb.ToString();
             }
         }
+
         /// <summary>
         /// If saving to remote, load tracker.db if exist, otherwise create, populate potential new songs with data from score data hash map
         /// When not saving to remote, just generate the tracker info from INFINITAS internal hash map
