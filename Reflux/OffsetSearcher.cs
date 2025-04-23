@@ -7,57 +7,39 @@ namespace Reflux
     {
         // Movement between versions is generally on scale of tens of kilobytes, but 2MB shouldn't be too
         // taxing and gives a wide net to catch the pattern in memory in case it jumps massively
-        public static int SearchSpace = 2000000;
+        public static int InitialSearchSpace = 2000000;
+        public static int MaxSearchSpace = (int)3e8;
         public static OffsetsCollection SearchNewOffsets()
         {
             Console.WriteLine("Starting offset search mode");
             Console.WriteLine();
             OffsetsCollection newOffsets = new OffsetsCollection();
-            var buffer = FetchDataSet(Offsets.SongList, SearchSpace); // 2MB 
-            newOffsets.SongList = buffer.address[Search(buffer.data, MergeByteRepresentations("5.1.1.".ToBytes()))];
-            buffer = FetchDataSet(Offsets.UnlockData, SearchSpace); // 2MB 
-            newOffsets.UnlockData = buffer.address[Search(buffer.data, MergeByteRepresentations(1000.ToBytes(), 1.ToBytes(), 462.ToBytes()))];
-            buffer = FetchDataSet(Offsets.DataMap, SearchSpace); // 2MB 
-            var ix = Search(buffer.data, MergeByteRepresentations(0x3FFF.ToBytes()));
-            //ix -= 3*8; // Back 3 steps in 8-byte address space
-            newOffsets.DataMap = buffer.address[ix] - 3 * 8; // Back 3 steps in 8-byte address space
+            newOffsets.SongList = FetchAndSearch(Offsets.SongList, "SongList", MergeByteRepresentations("5.1.1.".ToBytes()));
+            newOffsets.UnlockData = FetchAndSearch(Offsets.UnlockData, "UnlockData", MergeByteRepresentations(1000.ToBytes(), 1.ToBytes(), 462.ToBytes()));
+            newOffsets.DataMap = FetchAndSearch(Offsets.DataMap, "DataMap", MergeByteRepresentations(0x3FFF.ToBytes(), 0.ToBytes()), -3 * 8); // Back 3 steps in 8-byte address space
 
             Console.WriteLine("Play Sleepless Days SPA, either fully or exit after hitting 50-ish notes or more, then come back here");
             var (address, judgeInfo) = QueryJudgeInfo();
             newOffsets.JudgeData = address;
-            buffer = FetchDataSet(Offsets.PlayData, SearchSpace); // 2MB 
-            newOffsets.PlayData = buffer.address[Search(buffer.data, MergeByteRepresentations(25094.ToBytes(), 3.ToBytes(), (judgeInfo.pgreat * 2 + judgeInfo.great).ToBytes()))];
-            buffer = FetchDataSet(Offsets.CurrentSong, SearchSpace); // 2MB 
-            var currentSongIndex = Search(buffer.data, MergeByteRepresentations(25094.ToBytes(), 3.ToBytes()));
-            if (buffer.address[currentSongIndex] == newOffsets.PlayData)
+            newOffsets.PlayData = FetchAndSearch(Offsets.PlayData, "PlayData", MergeByteRepresentations(25094.ToBytes(), 3.ToBytes(), (judgeInfo.pgreat * 2 + judgeInfo.great).ToBytes()));
+            var currentSongAddress = FetchAndSearch(Offsets.CurrentSong, "CurrentSong", MergeByteRepresentations(25094.ToBytes(), 3.ToBytes()));
+            if (currentSongAddress == newOffsets.PlayData) // Ended up finding the same place for both, so CurrentSong is currently pointing at play data
             {
-                currentSongIndex = Search(buffer.data, MergeByteRepresentations(25094.ToBytes(), 3.ToBytes(), (judgeInfo.pgreat * 2 + judgeInfo.great).ToBytes()), currentSongIndex);
+                currentSongAddress = FetchAndSearch(Offsets.CurrentSong, "CurrentSong_Phase2", MergeByteRepresentations(25094.ToBytes(), 3.ToBytes()), 0, currentSongAddress);
             }
-            newOffsets.CurrentSong = buffer.address[currentSongIndex];
+            newOffsets.CurrentSong = currentSongAddress;
 
             // Get settings last, as those will depend on if you play P1 or P2, which we can get from after judge data is set
-            Console.WriteLine("Set the following settings for a moment: RANDOM EXHARD OFF SUDDEN+");
-            long settingsAddress = -1;
-            do
+            Console.WriteLine("Set the following settings and then press enter: RANDOM EXHARD OFF SUDDEN+");
+            Console.ReadLine();
+            var settingsAddress = FetchAndSearch(Offsets.PlaySettings, "PlaySettings_1", MergeByteRepresentations(1.ToBytes(), 4.ToBytes(), 0.ToBytes(), 0.ToBytes(), 1.ToBytes()));
+            Console.WriteLine("Now set the following settings and then press enter: MIRROR EASY AUTO-SCRATCH HIDDEN+");
+            Console.ReadLine();
+            var newResult = FetchAndSearch(Offsets.PlaySettings, "PlaySettings_2", MergeByteRepresentations(4.ToBytes(), 2.ToBytes(), 1.ToBytes(), 0.ToBytes(), 2.ToBytes()));
+            if (newResult != settingsAddress)
             {
-                buffer = FetchDataSet(Offsets.PlaySettings, SearchSpace); // 2MB 
-                var index = Search(buffer.data, MergeByteRepresentations(1.ToBytes(), 4.ToBytes(), 0.ToBytes(), 0.ToBytes(), 1.ToBytes()));
-                if (index != -1)
-                {
-                    Console.WriteLine("Now set the following settings for a moment: MIRROR EASY AUTO-SCRATCH HIDDEN+");
-                    do
-                    {
-                        buffer = FetchDataSet(Offsets.PlaySettings, SearchSpace); // 2MB 
-                        var newindex = Search(buffer.data, MergeByteRepresentations(4.ToBytes(), 2.ToBytes(), 1.ToBytes(), 0.ToBytes(), 2.ToBytes()));
-                        if (newindex != -1 && newindex == index)
-                        {
-                            settingsAddress = buffer.address[index];
-                            break;
-                        }
-                    } while (true);
-                }
-
-            } while (settingsAddress == -1);
+                throw new Exception("Found a different result on the second search");
+            }
             newOffsets.PlaySettings = settingsAddress;
             return newOffsets;
         }
@@ -154,26 +136,34 @@ namespace Reflux
             } while (!parseSuccess);
 
             j.playtype = PlayType.P1;
-            var (address, data) = FetchDataSet(Offsets.JudgeData, SearchSpace); // 2MB 
-            var index = Search(data, MergeByteRepresentations(
-                j.pgreat.ToBytes(), j.great.ToBytes(), j.good.ToBytes(), j.bad.ToBytes(), j.poor.ToBytes(), // P1
-                0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), // P2
-                j.combobreak.ToBytes(), 0.ToBytes(), // Combobreaks
-                j.fast.ToBytes(), 0.ToBytes(), j.slow.ToBytes(), 0.ToBytes() // Fast/Slow
-                ));
-
-            if (index == -1) // try P2
+            long address = -1;
+            try
             {
-                j.playtype = PlayType.P2;
-                index = Search(data, MergeByteRepresentations(
-                0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), // P2
-                j.pgreat.ToBytes(), j.great.ToBytes(), j.good.ToBytes(), j.bad.ToBytes(), j.poor.ToBytes(), // P1
-                0.ToBytes(), j.combobreak.ToBytes(), // Combobreaks
-                0.ToBytes(), j.fast.ToBytes(), 0.ToBytes(), j.slow.ToBytes() // Fast/Slow
-                ));
-                if (index == -1) { Console.WriteLine("Unable to find judge data"); return (address: -1, judgeInfo: new Judge()); }
+
+                address = FetchAndSearch(Offsets.JudgeData, "JudgeData_P1", MergeByteRepresentations(
+                    j.pgreat.ToBytes(), j.great.ToBytes(), j.good.ToBytes(), j.bad.ToBytes(), j.poor.ToBytes(), // P1
+                    0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), // P2
+                    j.combobreak.ToBytes(), 0.ToBytes(), // Combobreaks
+                    j.fast.ToBytes(), 0.ToBytes(), j.slow.ToBytes(), 0.ToBytes() // Fast/Slow
+                    ));
             }
-            return (address: address[index], judgeInfo: j);
+            catch
+            {
+                try
+                {
+                    address = FetchAndSearch(Offsets.JudgeData, "JudgeData_P2", MergeByteRepresentations(
+                    0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), 0.ToBytes(), // P2
+                    j.pgreat.ToBytes(), j.great.ToBytes(), j.good.ToBytes(), j.bad.ToBytes(), j.poor.ToBytes(), // P1
+                    0.ToBytes(), j.combobreak.ToBytes(), // Combobreaks
+                    0.ToBytes(), j.fast.ToBytes(), 0.ToBytes(), j.slow.ToBytes() // Fast/Slow
+                    ));
+                }
+                catch
+                {
+                    throw new Exception("Unable to find judge data");
+                }
+            }
+            return (address: address, judgeInfo: j);
         }
         static byte[] MergeByteRepresentations(params byte[][] data)
         {
@@ -188,6 +178,23 @@ namespace Reflux
 
             return (address: addresses, data: Utils.ReadRaw(address - distanceFromCenter, datalen));
         }
+        static long FetchAndSearch(long offset, string offsetDescription, byte[] pattern, int offsetFromMatch = 0, long ignoreAddress = -1)
+        {
+            var searchSize = InitialSearchSpace;
+            do
+            {
+                var buffer = FetchDataSet(offset, searchSize);
+                var searchResult = Search(buffer, pattern, ignoreAddress);
+                if (searchResult != -1)
+                {
+                    searchResult += offsetFromMatch; // Back 3 steps in 8-byte address space
+                    return buffer.address[searchResult];
+                }
+                Console.WriteLine($"Unable to find {offsetDescription}, search range {searchSize / 1e6}MB -> {(searchSize * 2) / 1e6}");
+                searchSize *= 2;
+            } while (searchSize < MaxSearchSpace);
+            throw new Exception($"Search space has exceeded maximum of {MaxSearchSpace / 1e6}MB");
+        }
         /// <summary>
         /// Searches dataset for pattern, returns offset
         /// </summary>
@@ -195,21 +202,21 @@ namespace Reflux
         /// <param name="pattern"></param>
         /// <returns>Returns offset, or -1 if no match</returns>
         /// <exception cref="ArgumentException"></exception>
-        static int Search(byte[] data, byte[] pattern, int ignoreIndex = -1)
+        static int Search((long[] address, byte[] data) buffer, byte[] pattern, long ignoreAddress = -1)
         {
-            if (data.Length < pattern.Length)
+            if (buffer.data.Length < pattern.Length)
             {
                 throw new ArgumentException("Pattern cannot be shorter than search space");
             }
-            for (int i = 0; i < data.Length; i++)
+            for (int i = 0; i < buffer.data.Length; i++)
             {
                 bool match = true;
                 for (int j = 0; j < pattern.Length; j++)
                 {
-                    if (data[i + j] != pattern[j]) { match = false; break; }
-                    if (data[i + j] == pattern[j]) { match = true; }
+                    if (buffer.data[i + j] != pattern[j]) { match = false; break; }
+                    if (buffer.data[i + j] == pattern[j]) { match = true; }
                 }
-                if (i != ignoreIndex && match) { return i; }
+                if (buffer.address[i] != ignoreAddress && match) { return i; }
             }
             return -1;
         }
