@@ -24,12 +24,14 @@
             int assistVal = 0;
             int rangeVal = 0;
             int style2Val = 0;
+            int HranVal = 0;
             if (playstyle == PlayType.P1 || playstyle == PlayType.DP)
             {
                 styleVal = Utils.ReadInt32(Offsets.PlaySettings, 0);
                 gaugeVal = Utils.ReadInt32(Offsets.PlaySettings, word);
                 assistVal = Utils.ReadInt32(Offsets.PlaySettings, word * 2);
                 rangeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 4);
+                HranVal = Utils.ReadInt32(Offsets.PlaySettings, word * 9);
                 if (playstyle == PlayType.DP) /* Style for DP P2 side has its own value and isn't shared with P2 settings */
                 {
                     style2Val = Utils.ReadInt32(Offsets.PlaySettings, word * 5);
@@ -37,14 +39,14 @@
             }
             else if (playstyle == PlayType.P2) /* P2 settings are separate from P1 */
             {
-                styleVal = Utils.ReadInt32(Offsets.PlaySettings, word * 12);
-                gaugeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 13);
-                assistVal = Utils.ReadInt32(Offsets.PlaySettings, word * 14);
-                rangeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 16);
+                styleVal = Utils.ReadInt32(Offsets.PlaySettings, word * 15);
+                gaugeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 16);
+                assistVal = Utils.ReadInt32(Offsets.PlaySettings, word * 17);
+                rangeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 19);
+                HranVal = Utils.ReadInt32(Offsets.PlaySettings, word * 24);
             }
             int flipVal = Utils.ReadInt32(Offsets.PlaySettings, word * 3);
-            int battleVal = Utils.ReadInt32(Offsets.PlaySettings, word * 6);
-            int HranVal = Utils.ReadInt32(Offsets.PlaySettings, word * 7);
+            int battleVal = Utils.ReadInt32(Offsets.PlaySettings, word * 8);
 
             switch (styleVal)
             {
