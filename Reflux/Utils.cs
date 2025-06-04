@@ -225,7 +225,7 @@ namespace Reflux
 
             /* Cannot go from song select to result screen anyway */
             if (currentState == GameState.songSelect) { return currentState; }
-            marker = ReadInt32(Offsets.PlaySettings - word * 5, 0);
+            marker = ReadInt32(Offsets.PlaySettings - word * 6, 0);
             if (marker == 1)
             {
                 return GameState.songSelect;
