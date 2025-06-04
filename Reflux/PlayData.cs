@@ -71,7 +71,7 @@ namespace Reflux
                 var song = Utils.ReadInt32(Offsets.PlayData, 0);
                 difficulty = (Difficulty)Utils.ReadInt32(Offsets.PlayData, word);
                 clearLamp = (Lamp)Utils.ReadInt32(Offsets.PlayData, word * 6);
-                gauge = Utils.ReadInt32(Offsets.PlayData, word * 8);
+                gauge = Utils.ReadInt32(Offsets.JudgeData, word * 82); /* It's not in the place near the play data */
 
                 songID = song.ToString("00000");
                 chart = FetchChartInfo(Utils.songDb[songID], difficulty);
