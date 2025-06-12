@@ -89,7 +89,7 @@ ScoreMap
 Infinitas keeps both start and stop of the hashmap, as well as the hash mip size close together in static memory.
 .LP
 Search for 8 byte hex value: 
-.I 3FFF
+.I 7FFF
 .LP
 You should get only one match in static memory, the addresses should look like this when aligned as 8-byte HEX values:
 .PP

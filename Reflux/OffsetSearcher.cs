@@ -16,7 +16,7 @@ namespace Reflux
             OffsetsCollection newOffsets = new OffsetsCollection();
             newOffsets.SongList = FetchAndSearch(Offsets.SongList, "SongList", MergeByteRepresentations("5.1.1.".ToBytes()));
             newOffsets.UnlockData = FetchAndSearch(Offsets.UnlockData, "UnlockData", MergeByteRepresentations(1000.ToBytes(), 1.ToBytes(), 462.ToBytes()));
-            newOffsets.DataMap = FetchAndSearch(Offsets.DataMap, "DataMap", MergeByteRepresentations(0x3FFF.ToBytes(), 0.ToBytes()), -3 * 8); // Back 3 steps in 8-byte address space
+            newOffsets.DataMap = FetchAndSearch(Offsets.DataMap, "DataMap", MergeByteRepresentations(0x7FFF.ToBytes(), 0.ToBytes()), -3 * 8); // Back 3 steps in 8-byte address space
 
             Console.WriteLine("Play Sleepless Days SPA, either fully or exit after hitting 50-ish notes or more, then come back here");
             var (address, judgeInfo) = QueryJudgeInfo();
