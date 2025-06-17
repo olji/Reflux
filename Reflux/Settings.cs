@@ -2,6 +2,7 @@
 {
     class Settings
     {
+        public static readonly int P2_offset = 4 * 15;
         public string style;
         public string style2; /* Style for 2p side in DP */
         public string gauge;
@@ -39,11 +40,11 @@
             }
             else if (playstyle == PlayType.P2) /* P2 settings are separate from P1 */
             {
-                styleVal = Utils.ReadInt32(Offsets.PlaySettings, word * 15);
-                gaugeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 16);
-                assistVal = Utils.ReadInt32(Offsets.PlaySettings, word * 17);
-                rangeVal = Utils.ReadInt32(Offsets.PlaySettings, word * 19);
-                HranVal = Utils.ReadInt32(Offsets.PlaySettings, word * 24);
+                styleVal = Utils.ReadInt32(Offsets.PlaySettings, P2_offset);
+                gaugeVal = Utils.ReadInt32(Offsets.PlaySettings, P2_offset + word);
+                assistVal = Utils.ReadInt32(Offsets.PlaySettings, P2_offset + (word * 2));
+                rangeVal = Utils.ReadInt32(Offsets.PlaySettings, P2_offset + (word * 4));
+                HranVal = Utils.ReadInt32(Offsets.PlaySettings, P2_offset + (word * 9));
             }
             int flipVal = Utils.ReadInt32(Offsets.PlaySettings, word * 3);
             int battleVal = Utils.ReadInt32(Offsets.PlaySettings, word * 8);
