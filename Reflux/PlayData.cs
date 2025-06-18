@@ -39,7 +39,7 @@ namespace Reflux
         public uint MissCount { get { return (uint)(judges.bad + judges.poor); } }
         public int ExScore { get { return exscore; } }
         /// <summary>
-        /// Play ended prematurely (Quit or failed HC/EXH)
+        /// Play ended prematurely (Quit or failed HC/EXH or 50 consecutive misses in Normal Gauge)
         /// </summary>
         public bool PrematureEnd { get { return judges.prematureEnd; } }
         /// <summary>
