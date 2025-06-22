@@ -46,6 +46,7 @@ namespace Reflux
         /// True if miss count shouldn't be calculated and saved (When it's not shown in the result screens essentially)
         /// </summary>
         public bool MissCountValid { get { return (DataAvailable && !PrematureEnd && settings.assist == "OFF"); } }
+        public string Gauge { get { return settings.gauge; } }
 
         public PlayData()
         {
