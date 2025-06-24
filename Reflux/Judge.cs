@@ -38,8 +38,8 @@
             var p2fast = Utils.ReadInt32(Offsets.JudgeData, word * 13);
             var p1slow = Utils.ReadInt32(Offsets.JudgeData, word * 14);
             var p2slow = Utils.ReadInt32(Offsets.JudgeData, word * 15);
-            var measure_end = Utils.ReadInt32(Offsets.JudgeData, word * 16);
-
+            var p1measure_end = Utils.ReadInt32(Offsets.JudgeData, word * 16);
+            var p2measure_end = Utils.ReadInt32(Offsets.JudgeData, word * 17);
 
             if (p1pgreat + p1great + p1good + p1bad + p1poor == 0)
             {
@@ -59,7 +59,7 @@
             fast = p1fast + p2fast;
             slow = p1slow + p2slow;
             combobreak = p1cb + p2cb;
-            prematureEnd = measure_end != 0;
+            prematureEnd = p1measure_end + p2measure_end != 0;
         }
     }
 }
