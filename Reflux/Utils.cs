@@ -130,31 +130,31 @@ namespace Reflux
             var exPart = (double)maxEx / 9;
 
 
-            if (exscore > exPart * 8)
+            if (exscore >= exPart * 8)
             {
                 return Grade.AAA;
             }
-            else if (exscore > exPart * 7)
+            else if (exscore >= exPart * 7)
             {
                 return Grade.AA;
             }
-            else if (exscore > exPart * 6)
+            else if (exscore >= exPart * 6)
             {
                 return Grade.A;
             }
-            else if (exscore > exPart * 5)
+            else if (exscore >= exPart * 5)
             {
                 return Grade.B;
             }
-            else if (exscore > exPart * 4)
+            else if (exscore >= exPart * 4)
             {
                 return Grade.C;
             }
-            else if (exscore > exPart * 3)
+            else if (exscore >= exPart * 3)
             {
                 return Grade.D;
             }
-            else if (exscore > exPart * 2)
+            else if (exscore >= exPart * 2)
             {
                 return Grade.E;
             }
