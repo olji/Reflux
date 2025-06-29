@@ -81,22 +81,20 @@ namespace Reflux
                     if (i == (int)Difficulty.DPB) { continue; }
 
                     Chart chart = new Chart() { songID = songid, difficulty = (Difficulty)i };
-                    bool unlockState = false; // Initialize unlock state to false
+                    bool unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
 
-                    /* Check if the chart difficulty is SPA or DPA, and set unlockState accordingly */
-                    if (chart.difficulty == Difficulty.SPA || chart.difficulty == Difficulty.DPA)
-                    {
-                        unlockState = Utils.GetUnlockStateForDifficulty(songid, chart.difficulty);
-                    }
                     /* For SPL and DPL, set unlockState based on SPA or DPA unlock status */
-                    else if (chart.difficulty == Difficulty.SPL || chart.difficulty == Difficulty.DPL)
+                    if (chart.difficulty == Difficulty.SPL || chart.difficulty == Difficulty.DPL)
                     {
+                        // Get unlock type
+                        var type = Utils.unlockDb[songid].type;
+
                         // Get unlock state for SPA or DPA
                         bool unlockStateSPA = Utils.GetUnlockStateForDifficulty(songid, Difficulty.SPA);
                         bool unlockStateDPA = Utils.GetUnlockStateForDifficulty(songid, Difficulty.DPA);
 
                         // Set unlockState to true only if both SPA and DPA are unlocked
-                        unlockState = unlockStateSPA && unlockStateDPA;
+                        unlockState = type != UnlockType.Sub || (unlockStateSPA && unlockStateDPA);
                     }
 
                     /* Handle columns for missing charts */
