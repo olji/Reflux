@@ -233,7 +233,7 @@ namespace Reflux
             {
                 sb.Append($"\t{settings.style}\t{settings.style2}\t{settings.gauge}\t{settings.assist}\t{settings.range}");
             }
-            sb.Append($"\t{timestamp}");
+            sb.Append($"\t{timestamp.ToLocalTime():yyyy/MM/dd HH:mm:ss}");
             return sb.ToString();
         }
         /// <summary>

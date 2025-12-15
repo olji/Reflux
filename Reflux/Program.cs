@@ -63,8 +63,8 @@ namespace Reflux
                     sessionDir.Create();
                 }
             }
-            var sessionFile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.tsv"));
-            var jsonfile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_hh_mm_ss}.json"));
+            var sessionFile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_HH_mm_ss}.tsv"));
+            var jsonfile = new FileInfo(Path.Combine(sessionDir.FullName, $"Session_{now:yyyy_MM_dd_HH_mm_ss}.json"));
             #endregion
 
             #region Repeadedly attempt hooking to application
