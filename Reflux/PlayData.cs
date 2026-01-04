@@ -42,6 +42,7 @@ namespace Reflux
         /// Play ended prematurely (Quit or failed HC/EXH or 50 consecutive misses in Normal Gauge)
         /// </summary>
         public bool PrematureEnd { get { return judges.prematureEnd; } }
+        public bool QuickRetry { get { return judges.quickRetry; } }
         /// <summary>
         /// True if miss count shouldn't be calculated and saved (When it's not shown in the result screens essentially)
         /// </summary>
@@ -60,6 +61,12 @@ namespace Reflux
         {
 
             judges.Fetch();
+
+            if (judges.quickRetry)
+            {
+                return;
+            }
+
             settings.Fetch(judges.playtype);
 
             timestamp = DateTime.UtcNow;

@@ -12,6 +12,7 @@
         public int slow;
         public int combobreak;
         public bool prematureEnd;
+        public bool quickRetry;
 
         public bool PFC { get { return (good + bad + poor) == 0; } }
         /// <summary>
@@ -60,6 +61,8 @@
             slow = p1slow + p2slow;
             combobreak = p1cb + p2cb;
             prematureEnd = p1measure_end + p2measure_end != 0;
+
+            quickRetry = pgreat + great + good + bad + poor == 0 && !prematureEnd;
         }
     }
 }
