@@ -243,6 +243,7 @@ namespace Reflux
                 Console.WriteLine("Fetching song scoring data...");
                 ScoreMap.LoadMap();
                 Tracker.LoadTracker();
+                Utils.FindPlayStateMarker();
 
                 #region Sync with server
 
@@ -288,6 +289,10 @@ namespace Reflux
                 GameState state = GameState.songSelect;
 
                 Console.WriteLine("Initialized and ready");
+                if (!Utils.playMarkerAvailable)
+                {
+                    Console.WriteLine("Expected pattern to detect play state not found, so play result fetching is not available.");
+                }
 
                 string chart = "";
 

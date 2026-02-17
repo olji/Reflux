@@ -107,6 +107,8 @@ namespace Reflux
             Int64 lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
         public static IntPtr handle;
+        public static long playMarkerAddress = 0;
+        public static bool playMarkerAvailable = false;
         /// <summary>
         /// DB for keeping track of unlocks and potential changes
         /// </summary>
@@ -200,6 +202,32 @@ namespace Reflux
                 Except(e);
             }
         }
+        public static void FindPlayStateMarker()
+        {
+            var buffer = new byte[96];
+            int nRead = 0;
+            ReadProcessMemory((int)handle, Offsets.JudgeData + 144, buffer, buffer.Length, ref nRead);
+            List<int> indices = new List<int>();
+            List<int> values = new List<int>();
+            for (int i = 0; i < buffer.Length; i += 4)
+            {
+                int val = BytesToInt32(buffer, i);
+                if (val > 10000)
+                {
+                    indices.Add(i);
+                }
+            }
+            var judgeEnd = indices.Take(3);
+            if (judgeEnd.ElementAt(1) - judgeEnd.ElementAt(0) == 8 && judgeEnd.ElementAt(2) - judgeEnd.ElementAt(1) == 8)
+            {
+                // Judge offset + 144 (get close to section with search pattern) + offset for second magic value + 6 32-bit integers later
+                string magicNumberAddress = (Offsets.JudgeData + 144 + judgeEnd.ElementAt(1)).ToString("X");
+                playMarkerAddress = Offsets.JudgeData + 144 + judgeEnd.ElementAt(1) + 4 * 7;
+                playMarkerAvailable = true;
+            }
+
+            Console.WriteLine($"Found play state marker at {playMarkerAddress:X}");
+        }
         /// <summary>
         /// Figure out if INFINITAS is currently playing a song, showing the results or hanging out in the song select
         /// </summary>
@@ -207,20 +235,14 @@ namespace Reflux
         /// <returns></returns>
         public static GameState FetchGameState(GameState currentState)
         {
+            if (!playMarkerAvailable) { return GameState.songSelect; }
             short word = 4;
-            short offset = 54;
 
-            var marker = ReadInt32(Offsets.JudgeData, word * offset);
+
+            var marker = ReadInt32(playMarkerAddress, 0);
             if (marker != 0)
             {
-
-                // In case it has shifted for whatever reason
-
-                marker = ReadInt32(Offsets.JudgeData, word * (offset + 1));
-                if (marker != 0)
-                {
-                    return GameState.playing;
-                }
+                return GameState.playing;
             }
 
             /* Cannot go from song select to result screen anyway */
