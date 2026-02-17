@@ -342,3 +342,4 @@ healthchecksdb
 .vscode/tasks.json
 Reflux/offset finding.txt
 /Reflux/reflux build/netcoreapp3.1
+/publish.bat
