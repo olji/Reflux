@@ -278,7 +278,7 @@ namespace Reflux
                     result.Add(songInfo.ID, songInfo);
                 }
 
-                current_position += 0x3F0;
+                current_position += 0x4B0;
 
             }
             songDb = result;
@@ -421,27 +421,34 @@ namespace Reflux
         {
             int bytesRead = 0;
             short slab = 64;
+            short string_slab = 128; // Strings takes double the space now, except for the LED ticker text
             short word = 4; /* Int32 */
+            int offset = 0;
 
             byte[] buffer = new byte[1008];
 
             ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
 
-            var title1 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Take(slab).Where(x => x != 0).ToArray());
+            var title1 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Take(string_slab).Where(x => x != 0).ToArray());
+            offset += string_slab;
 
             if (Utils.BytesToInt32(buffer.Take(slab).ToArray(), 0) == 0)
             {
                 return new SongInfo();
             }
 
-            var title2 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(slab).Take(slab).Where(x => x != 0).ToArray());
-            var genre = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(slab * 2).Take(slab).Where(x => x != 0).ToArray());
-            var artist = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(slab * 3).Take(slab).Where(x => x != 0).ToArray());
+            var title2 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(string_slab).Take(slab).Where(x => x != 0).ToArray());
+            offset += slab;
+            var genre = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(slab).Where(x => x != 0).ToArray());
+            offset += string_slab;
+            var artist = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(slab).Where(x => x != 0).ToArray());
+            offset += string_slab;
 
-            var folderBytes = buffer.Skip(slab * 4).Skip(24).Take(1).ToList();
+            var folderBytes = buffer.Skip(offset).Skip(24).Take(1).ToList();
             var folder = BitConverter.ToInt32(new byte[] { folderBytes[0], 0, 0, 0 });
 
-            var diff_section = buffer.Skip(slab * 4 + slab / 2).Take(10).ToArray();
+            var diff_section = buffer.Skip(offset + slab / 2).Take(10).ToArray();
+            offset += slab;
             var diff_levels = new int[] {
                 Convert.ToInt32(diff_section[0]),
                 Convert.ToInt32(diff_section[1]),
@@ -454,8 +461,9 @@ namespace Reflux
                 Convert.ToInt32(diff_section[8]),
                 Convert.ToInt32(diff_section[9]) };
 
-            var bpms = buffer.Skip(slab * 5).Take(8).ToArray();
-            var noteCounts_bytes = buffer.Skip(slab * 6 + 48).Take(slab).ToArray();
+            var bpms = buffer.Skip(offset).Take(8).ToArray();
+            offset += slab;
+            var noteCounts_bytes = buffer.Skip(offset + 48).Take(slab).ToArray();
 
             var bpmMax = Utils.BytesToInt32(bpms, 0);
             var bpmMin = Utils.BytesToInt32(bpms, word);
@@ -484,7 +492,7 @@ namespace Reflux
             };
 
 
-            var idarray = buffer.Skip(256 + 368).Take(4).ToArray();
+            var idarray = buffer.Skip(816).Take(4).ToArray();
 
             var ID = BitConverter.ToInt32(idarray, 0).ToString("D5");
 

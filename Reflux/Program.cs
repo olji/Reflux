@@ -137,18 +137,18 @@ namespace Reflux
                 if (!correctVersion)
                 {
                     var result = OffsetSearcher.SearchNewOffsets();
-                        Console.WriteLine("New offsets found:");
-                        Console.WriteLine($"SongList: {result.SongList:X}");
-                        Console.WriteLine($"UnlockData: {result.UnlockData:X}");
-                        Console.WriteLine($"PlaySettings: {result.PlaySettings:X}");
-                        Console.WriteLine($"PlayData: {result.PlayData:X}");
-                        Console.WriteLine($"CurrentSong: {result.CurrentSong:X}");
-                        Console.WriteLine($"JudgeData: {result.JudgeData:X}");
-                        Console.WriteLine($"DataMap: {result.DataMap:X}");
-                        Console.WriteLine("Applying new offsets and trying to continue...");
-                        Offsets.SaveOffsets(foundVersion, result);
-                        correctVersion = true;
-                    }
+                    Console.WriteLine("New offsets found:");
+                    Console.WriteLine($"SongList: {result.SongList:X}");
+                    Console.WriteLine($"UnlockData: {result.UnlockData:X}");
+                    Console.WriteLine($"PlaySettings: {result.PlaySettings:X}");
+                    Console.WriteLine($"PlayData: {result.PlayData:X}");
+                    Console.WriteLine($"CurrentSong: {result.CurrentSong:X}");
+                    Console.WriteLine($"JudgeData: {result.JudgeData:X}");
+                    Console.WriteLine($"DataMap: {result.DataMap:X}");
+                    Console.WriteLine("Applying new offsets and trying to continue...");
+                    Offsets.SaveOffsets(foundVersion, result);
+                    correctVersion = true;
+                }
 
                 Network.UpdateSupportFile("encodingfixes");
                 Network.UpdateSupportFile("customtypes");
@@ -180,7 +180,10 @@ namespace Reflux
                     }
                     Thread.Sleep(1000); /* Extra sleep just to avoid potentially undiscovered race conditions */
                     Utils.FetchSongDataBase();
-                    if (Utils.songDb["80003"].totalNotes[3] < 10) /* If Clione (Ryu* Remix) SPH has less than 10 notes, the songlist probably wasn't completely populated when we fetched it. That memory space generally tends to hold 0, 2 or 3, depending on which 'difficulty'-doubleword you're reading */
+
+                    var lastID = Utils.songDb.Keys.Last();
+                    // Check notecount of last ID, in case the song list wasn't completely populated when read
+                    if (Utils.songDb[lastID].totalNotes[3] < 10)
                     {
                         Utils.Debug("Notecount data seems bad, retrying fetching in case list wasn't fully populated.");
                         Thread.Sleep(5000);
