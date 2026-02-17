@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Version>1.15.2</Version>
+    <Version>1.16.0</Version>
 	<ApplicationIcon>resources/icon.ico</ApplicationIcon>
     <OutputPath>reflux build</OutputPath>
 	<PublishSingleFile>true</PublishSingleFile>
