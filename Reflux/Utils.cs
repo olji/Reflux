@@ -447,7 +447,7 @@ namespace Reflux
             short word = 4; /* Int32 */
             int offset = 0;
 
-            byte[] buffer = new byte[1008];
+            byte[] buffer = new byte[1200];
 
             ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
 
@@ -459,11 +459,11 @@ namespace Reflux
                 return new SongInfo();
             }
 
-            var title2 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(string_slab).Take(slab).Where(x => x != 0).ToArray());
+            var title2 = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(slab).Where(x => x != 0).ToArray());
             offset += slab;
-            var genre = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(slab).Where(x => x != 0).ToArray());
+            var genre = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(string_slab).Where(x => x != 0).ToArray());
             offset += string_slab;
-            var artist = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(slab).Where(x => x != 0).ToArray());
+            var artist = Encoding.GetEncoding("Shift-JIS").GetString(buffer.Skip(offset).Take(string_slab).Where(x => x != 0).ToArray());
             offset += string_slab;
 
             var folderBytes = buffer.Skip(offset).Skip(24).Take(1).ToList();
