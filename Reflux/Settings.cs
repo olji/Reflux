@@ -2,7 +2,7 @@
 {
     class Settings
     {
-        public static readonly int P2_offset = 4 * 15;
+        public static readonly int P2_offset = 4 * 16;
         public string style;
         public string style2; /* Style for 2p side in DP */
         public string gauge;
