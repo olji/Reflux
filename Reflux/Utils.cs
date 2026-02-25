@@ -238,7 +238,6 @@ namespace Reflux
             if (!playMarkerAvailable) { return GameState.songSelect; }
             short word = 4;
 
-
             var marker = ReadInt32(playMarkerAddress, 0);
             if (marker != 0)
             {
@@ -294,6 +293,12 @@ namespace Reflux
                     var old = songInfo.artist;
                     songInfo.artist = knownEncodingIssues[songInfo.artist];
                     Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.artist}\"");
+                }
+                if (knownEncodingIssues.ContainsKey(songInfo.genre))
+                {
+                    var old = songInfo.genre;
+                    songInfo.genre = knownEncodingIssues[songInfo.genre];
+                    Debug($"Fixed encoding issue \"{old}\" with \"{songInfo.genre}\"");
                 }
                 if (!result.ContainsKey(songInfo.ID))
                 {
