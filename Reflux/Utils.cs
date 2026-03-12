@@ -109,6 +109,7 @@ namespace Reflux
         public static IntPtr handle;
         public static long playMarkerAddress = 0;
         public static bool playMarkerAvailable = false;
+        readonly static int songBufferSize = 0x630;
         /// <summary>
         /// DB for keeping track of unlocks and potential changes
         /// </summary>
@@ -222,11 +223,11 @@ namespace Reflux
             {
                 // Judge offset + 144 (get close to section with search pattern) + offset for second magic value + 6 32-bit integers later
                 string magicNumberAddress = (Offsets.JudgeData + 144 + judgeEnd.ElementAt(1)).ToString("X");
-                playMarkerAddress = Offsets.JudgeData + 144 + judgeEnd.ElementAt(1) + 4 * 7;
+                playMarkerAddress = Offsets.JudgeData + 144 + judgeEnd.ElementAt(1) + 4 * 10;
                 playMarkerAvailable = true;
+                Console.WriteLine($"Found play state marker at {playMarkerAddress:X}");
             }
 
-            Console.WriteLine($"Found play state marker at {playMarkerAddress:X}");
         }
         /// <summary>
         /// Figure out if INFINITAS is currently playing a song, showing the results or hanging out in the song select
@@ -305,7 +306,7 @@ namespace Reflux
                     result.Add(songInfo.ID, songInfo);
                 }
 
-                current_position += 0x4B0;
+                current_position += songBufferSize;
 
             }
             songDb = result;
@@ -451,8 +452,9 @@ namespace Reflux
             short string_slab = 128; // Strings takes double the space now, except for the LED ticker text
             short word = 4; /* Int32 */
             int offset = 0;
+            int idPosition = 1200;
 
-            byte[] buffer = new byte[1200];
+            byte[] buffer = new byte[songBufferSize];
 
             ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
 
@@ -519,7 +521,7 @@ namespace Reflux
             };
 
 
-            var idarray = buffer.Skip(816).Take(4).ToArray();
+            var idarray = buffer.Skip(idPosition).Take(4).ToArray();
 
             var ID = BitConverter.ToInt32(idarray, 0).ToString("D5");
 
