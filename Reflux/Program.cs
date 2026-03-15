@@ -116,9 +116,9 @@ namespace Reflux
                     }
                 }
 
-                Console.Clear();
                 if (foundVersion != Offsets.Version)
                 {
+                    Console.Clear();
                     if (Config.UpdateFiles)
                     {
                         Console.WriteLine($"The datecodes for Infinitas ({foundVersion}) and Reflux ({Offsets.Version}) don't match.\nChecking if an update is available.");
