@@ -98,7 +98,7 @@ namespace Reflux
                     }
 
                     /* Handle columns for missing charts */
-                    if (!trackerDb.ContainsKey(chart) || (chart.difficulty == Difficulty.SPB && !unlockState))
+                    if (!trackerDb.ContainsKey(chart))
                     {
                         if (i > (int)Difficulty.SPB && i < (int)Difficulty.SPL)
                         {

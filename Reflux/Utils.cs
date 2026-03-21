@@ -657,10 +657,13 @@ namespace Reflux
                 // Beginner difficulties are handled differently
                 if (diff == Difficulty.SPB)
                 {
-                    unlockState = songDb[songid].type == UnlockType.Sub
-                        ? unlockState // If part of a music pack, the unlock state determines availability
-                        : songDb[songid].totalNotes[(int)diff] != 0; // Otherwise, note count not being zero means it's playable
-
+                    // Note count not being zero means that a 'beginner' exists
+                    if (songDb[songid].totalNotes[(int)diff] != 0)
+                    {
+                        // If part of a music pack, all songs are available if you have purchased it
+                        // Otherwise, all songs are available, including those locked in 'DJ POINT'
+                        unlockState = songDb[songid].type != UnlockType.Sub || unlockBits != 0;
+                    }
                 }
                 return unlockState;
             }
