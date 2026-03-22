@@ -106,6 +106,7 @@ namespace Reflux
         public static extern bool ReadProcessMemory(int hProcess,
             Int64 lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
+        public static readonly int song_offset = 4 * 396;
         public static IntPtr handle;
         public static long playMarkerAddress = 0;
         public static bool playMarkerAvailable = false;
@@ -220,9 +221,9 @@ namespace Reflux
             var judgeEnd = indices.Take(3);
             if (judgeEnd.ElementAt(1) - judgeEnd.ElementAt(0) == 8 && judgeEnd.ElementAt(2) - judgeEnd.ElementAt(1) == 8)
             {
-                // Judge offset + 144 (get close to section with search pattern) + offset for second magic value + 6 32-bit integers later
+                // Judge offset + 144 (get close to section with search pattern) + offset for second magic value + 8 32-bit integers later
                 string magicNumberAddress = (Offsets.JudgeData + 144 + judgeEnd.ElementAt(1)).ToString("X");
-                playMarkerAddress = Offsets.JudgeData + 144 + judgeEnd.ElementAt(1) + 4 * 7;
+                playMarkerAddress = Offsets.JudgeData + 144 + judgeEnd.ElementAt(1) + 4 * 9;
                 playMarkerAvailable = true;
             }
 
@@ -305,7 +306,7 @@ namespace Reflux
                     result.Add(songInfo.ID, songInfo);
                 }
 
-                current_position += 0x4B0;
+                current_position += song_offset;
 
             }
             songDb = result;
@@ -452,7 +453,7 @@ namespace Reflux
             short word = 4; /* Int32 */
             int offset = 0;
 
-            byte[] buffer = new byte[1200];
+            byte[] buffer = new byte[song_offset];
 
             ReadProcessMemory((int)handle, position, buffer, buffer.Length, ref bytesRead);
 
@@ -519,7 +520,7 @@ namespace Reflux
             };
 
 
-            var idarray = buffer.Skip(816).Take(4).ToArray();
+            var idarray = buffer.Skip(1200).Take(4).ToArray();
 
             var ID = BitConverter.ToInt32(idarray, 0).ToString("D5");
 
