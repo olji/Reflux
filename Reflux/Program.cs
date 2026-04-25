@@ -329,7 +329,9 @@ namespace Reflux
                             state = newstate;
 
                             Console.Clear();
-                            Console.WriteLine($"STATUS:{(newstate != GameState.playing ? " NOT" : "")} PLAYING");
+                            var judges = new Judge();
+                            judges.FetchPlayType();
+                            Console.WriteLine($"STATUS: {(newstate != GameState.playing ? "NOT" : judges.playtype.ToString())} PLAYING");
                             if (newstate == GameState.resultScreen)
                             {
                                 Thread.Sleep(1000); /* Sleep to avoid race condition */

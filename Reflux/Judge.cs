@@ -22,7 +22,7 @@
         {
             short word = 4;
 
-            var style = PlayType.P1;
+            FetchPlayType();
             var p1pgreat = Utils.ReadInt32(Offsets.JudgeData, 0);
             var p1great = Utils.ReadInt32(Offsets.JudgeData, word);
             var p1good = Utils.ReadInt32(Offsets.JudgeData, word * 2);
@@ -42,16 +42,6 @@
             var p1measure_end = Utils.ReadInt32(Offsets.JudgeData, word * 16);
             var p2measure_end = Utils.ReadInt32(Offsets.JudgeData, word * 17);
 
-            if (p1pgreat + p1great + p1good + p1bad + p1poor == 0)
-            {
-                style = PlayType.P2;
-            }
-            else if (p2pgreat + p2great + p2good + p2bad + p2poor > 0)
-            {
-                style = PlayType.DP;
-            }
-
-            playtype = style;
             pgreat = p1pgreat + p2pgreat;
             great = p1great + p2great;
             good = p1good + p2good;
@@ -63,6 +53,26 @@
             prematureEnd = p1measure_end + p2measure_end != 0;
 
             quickRetry = pgreat + great + good + bad + poor == 0 && !prematureEnd;
+        }
+
+        public void FetchPlayType()
+        {
+            if (!Utils.playMarkerAvailable) { return; }
+
+            // It seems like it can be determined using either address.
+            // 0x1425C4750  0 = Single, 2 = Double
+            // 0x1425C4760  1 = Single, 2 = Double
+
+            short word = 4;
+            int modeOffset = 0x4d7;   // 0x1425C4760
+            // mode: 1 = Single, 2 = Double
+            var mode = Utils.ReadInt32(Offsets.PlayData, word * modeOffset);
+            // side: 0 != P1, 0 = P2 (only in Single mode)
+            var side = Utils.ReadInt32(Utils.playMarkerAddress, word * 2);
+
+            playtype = mode == 2
+                ? PlayType.DP
+                : side != 0 ? PlayType.P1 : PlayType.P2;
         }
     }
 }
