@@ -59,7 +59,7 @@ namespace Reflux
         public string artist;
         public UnlockType type;
         public string genre;
-        public string bpm;
+        public string[] bpms; /* SPB, SPN, SPH, SPA, SPL, DPB, DPN, DPH, DPA, DPL */
         public int folder;
     }
     /// <summary>
@@ -477,7 +477,7 @@ namespace Reflux
             var folder = BitConverter.ToInt32(new byte[] { folderBytes[0], 0, 0, 0 });
 
             var diff_section = buffer.Skip(offset + slab / 2).Take(10).ToArray();
-            offset += slab;
+            offset += 48;
             var diff_levels = new int[] {
                 Convert.ToInt32(diff_section[0]),
                 Convert.ToInt32(diff_section[1]),
@@ -490,23 +490,19 @@ namespace Reflux
                 Convert.ToInt32(diff_section[8]),
                 Convert.ToInt32(diff_section[9]) };
 
-            var bpms = buffer.Skip(offset).Take(8).ToArray();
-            offset += slab;
-            var noteCounts_bytes = buffer.Skip(offset + 48).Take(slab).ToArray();
-
-            var bpmMax = Utils.BytesToInt32(bpms, 0);
-            var bpmMin = Utils.BytesToInt32(bpms, word);
-
-            string bpm = "NA";
-            if (bpmMin != 0)
+            var bpms_bytes = buffer.Skip(offset).Take(80).ToArray();
+            offset += slab * 2;
+            var bpmArray = Enumerable.Range(0, 20).Select(i => Utils.BytesToInt32(bpms_bytes, word * i)).ToArray();
+            var bpmList = new List<string>();
+            for (int i = 0; i < 20; i += 2)
             {
-                bpm = $"{bpmMin:000}~{bpmMax:000}";
+                var bpmMax = bpmArray[i];
+                var bpmMin = bpmArray[i + 1];
+                bpmList.Add(bpmMin != 0 ? $"{bpmMin:000}~{bpmMax:000}" : $"{bpmMax:000}");
             }
-            else
-            {
-                bpm = bpmMax.ToString("000");
-            }
+            string[] bpms = bpmList.ToArray();
 
+            var noteCounts_bytes = buffer.Skip(offset).Take(slab).ToArray();
             var noteCounts = new int[] {
                 Utils.BytesToInt32(noteCounts_bytes, 0),
                 Utils.BytesToInt32(noteCounts_bytes, word),
@@ -520,9 +516,7 @@ namespace Reflux
                 Utils.BytesToInt32(noteCounts_bytes, word * 9)
             };
 
-
             var idarray = buffer.Skip(idPosition).Take(4).ToArray();
-
             var ID = BitConverter.ToInt32(idarray, 0).ToString("D5");
 
             var song = new SongInfo
@@ -532,7 +526,7 @@ namespace Reflux
                 title_english = title2,
                 genre = genre,
                 artist = artist,
-                bpm = bpm,
+                bpms = bpms,
                 totalNotes = noteCounts,
                 level = diff_levels,
                 folder = folder

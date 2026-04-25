@@ -189,7 +189,7 @@ namespace Reflux
                     { "title2", song.title_english},
                     { "artist", song.artist},
                     { "genre", song.genre},
-                    { "bpm", song.bpm}
+                    { "bpm", song.bpms[2]}      // As before(SPH)
                 }
             );
             var response = client.PostAsync(Config.Server + "/api/addsong", content);
