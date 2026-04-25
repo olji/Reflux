@@ -205,12 +205,13 @@ namespace Reflux
         }
         public static void FindPlayStateMarker()
         {
+            long offset = Offsets.JudgeData + 144;
             var buffer = new byte[96];
             int nRead = 0;
-            ReadProcessMemory((int)handle, Offsets.JudgeData + 144, buffer, buffer.Length, ref nRead);
+            short word = 4;
+            ReadProcessMemory((int)handle, offset, buffer, buffer.Length, ref nRead);
             List<int> indices = new List<int>();
-            List<int> values = new List<int>();
-            for (int i = 0; i < buffer.Length; i += 4)
+            for (int i = 0; i < buffer.Length; i += word)
             {
                 int val = BytesToInt32(buffer, i);
                 if (val > 10000)
@@ -221,13 +222,12 @@ namespace Reflux
             var judgeEnd = indices.Take(3);
             if (judgeEnd.ElementAt(1) - judgeEnd.ElementAt(0) == 8 && judgeEnd.ElementAt(2) - judgeEnd.ElementAt(1) == 8)
             {
-                // Judge offset + 144 (get close to section with search pattern) + offset for second magic value + 8 32-bit integers later
-                string magicNumberAddress = (Offsets.JudgeData + 144 + judgeEnd.ElementAt(1)).ToString("X");
-                playMarkerAddress = Offsets.JudgeData + 144 + judgeEnd.ElementAt(1) + 4 * 8;
+                // Judge offset + 144 (get close to section with search pattern) + offset for second magic value + 6 32-bit integers later
+                long magicNumberAddress = offset + judgeEnd.ElementAt(1);
+                playMarkerAddress = magicNumberAddress + (word * 6);
                 playMarkerAvailable = true;
                 Console.WriteLine($"Found play state marker at {playMarkerAddress:X}");
             }
-
         }
         /// <summary>
         /// Figure out if INFINITAS is currently playing a song, showing the results or hanging out in the song select
