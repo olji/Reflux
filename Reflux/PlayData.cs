@@ -128,7 +128,7 @@ namespace Reflux
                 totalNotes = song.totalNotes[(int)difficulty],
                 artist = song.artist,
                 genre = song.genre,
-                bpm = song.bpm,
+                bpm = song.bpms[(int)difficulty],
                 songid = song.ID,
                 unlocked = Utils.GetUnlockStateForDifficulty(song.ID, difficulty)
             };
